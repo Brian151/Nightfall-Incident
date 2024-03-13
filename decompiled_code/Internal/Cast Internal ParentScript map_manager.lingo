@@ -1,0 +1,529 @@
+property pScrSize, pTileSize, pMapSizeLimit, pActMapSize, pActMapName, pActMapDataPos, pActMapData, pTileImgs, pMapClickPos, pMargin, pState, pImg, pMover, pActLayer, pObjData, pUploadDocks
+global glob
+
+on new me
+  pScrSize = [#width: 650, #height: 420]
+  pTileSize = [#width: 32, #height: 32]
+  pImg = [:]
+  pTileImgs = ["tx1"]
+  pState = #edit
+  pActLayer = 1
+  pObjData = []
+  pUploadDocks = []
+  me.calcNewMap()
+  me.showMapSizeInfo()
+  return me
+end
+
+on calcNewMap me
+  x = integer(pScrSize.width / pTileSize.width)
+  y = integer(pScrSize.height / pTileSize.height)
+  mX = integer(x * pTileSize.width)
+  my = integer(y * pTileSize.height)
+  if mX > pScrSize.width then
+    x = x - 1
+  end if
+  if my > pScrSize.height then
+    y = y - 1
+  end if
+  pMapSizeLimit = [#width: x, #height: y]
+end
+
+on createNewMap me, data, flag
+  pActMapDataPos = 0
+  me.readUserInput()
+  me.resetMapData()
+  if voidp(flag) then
+    me.drawMap()
+  end if
+  member("map_name").text = "untitled"
+  if not voidp(data) then
+    case data.cmd of
+      #mapName:
+        member("map_name").text = data.data
+    end case
+  end if
+  me.readNameField()
+  spBank()
+  glob.objs = []
+  pMover = VOID
+  pObjData = []
+  glob.file_manager.createNewMap()
+end
+
+on readNameField me
+  pActMapName = member("map_name").text
+end
+
+on readUserInput me
+  temp = member("user_input").text
+  oldIDel = the itemDelimiter
+  the itemDelimiter = ":"
+  i = 1
+  repeat while i <= the number of line in temp
+    tLine = temp.getProp(#line, i)
+    cmd = tLine.getProp(#item, 1)
+    case cmd of
+      "Tile size (x/y)":
+        pTileSize = [#width: tLine.getProp(#item, 2), #height: tLine.getProp(#item, 3)]
+        glob.tileHiBox.resizeBox()
+      "Map Size (x/y)":
+        x = integer(tLine.getProp(#item, 2))
+        y = integer(tLine.getProp(#item, 3))
+        me.calcNewMap()
+        x = min(x, pMapSizeLimit.width)
+        y = min(y, pMapSizeLimit.height)
+        pActMapSize = [#width: x, #height: y]
+        me.updateUserInputField()
+    end case
+    i = 1 + i
+  end repeat
+  pActMapName = member("map_name").text
+  me.calcNewMap()
+  me.showMapSizeInfo()
+end
+
+on resetMapData me
+  pActMapData = []
+  x = 1
+  repeat while x <= pActMapSize.width
+    tempy = []
+    y = 1
+    repeat while y <= pActMapSize.height
+      info = [#BKG: pTileImgs.getAt(1), #OBJ: [:]]
+      tempy.add(info)
+      y = 1 + y
+    end repeat
+    pActMapData.add(tempy)
+    x = 1 + x
+  end repeat
+end
+
+on showMapSizeInfo me
+  member("state_output").text = "Max Map Size with " & pTileSize.width & " by " & pTileSize.height & " tile is " & pMapSizeLimit.width & " by " & pMapSizeLimit.height
+end
+
+on updateUserInputField me
+  member("user_input").text = "Tile size (x/y):" & pTileSize.width & ":" & pTileSize.height & RETURN & "Map Size (x/y):" & pActMapSize.width & ":" & pActMapSize.height
+end
+
+on drawMap me
+  imgWidth = pTileSize.width * pActMapSize.width
+  imgHeight = pTileSize.height * pActMapSize.height
+  img = image(imgWidth, imgHeight, 4, 0, member("floor_tile_pal"))
+  w = 1
+  repeat while w <= pActMapSize.width
+    h = 1
+    repeat while h <= pActMapSize.height
+      srcImg = member(pActMapData.getAt(w).getAt(h).BKG).image
+      shiftX = 32 - srcImg.width / 2
+      shiftY = 32 - srcImg.height / 2
+      srcRect = member(pActMapData.getAt(w).getAt(h).BKG).rect + rect(-shiftX, -shiftY, shiftX, shiftY)
+      dX = w - 1 * pTileSize.width
+      dY = h - 1 * pTileSize.height
+      destRect = rect(dX, dY, dX + pTileSize.width, dY + pTileSize.height)
+      img.copyPixels(srcImg, destRect, srcRect)
+      if pActMapData.getAt(w).getAt(h).getAt(#OBJ).count > 0 then
+        OBJ = pActMapData.getAt(w).getAt(h).OBJ.pointer
+        part = pActMapData.getAt(w).getAt(h).OBJ.part
+        OBJ.drawSp(part, [w, h])
+      end if
+      h = 1 + h
+    end repeat
+    w = 1 + w
+  end repeat
+  member("map_flr").image = img
+  member("map_flr").regPoint = point(0, 0)
+  me.updateMargin()
+end
+
+on vMapClick me, pos
+  pMapClickPos = pos
+end
+
+on mapClick me, x, y
+  temp = me.mapClickLocToPos(x, y)
+  glob.tileHiBox.moveTo(temp.getAt(2) + pMargin.getAt(1), temp.getAt(3) + pMargin.getAt(2), temp.getAt(1))
+  return temp.getAt(1)
+end
+
+on mapClickPos me, x, y
+  temp = me.mapClickLocToPos(x, y)
+  return temp.getAt(1)
+end
+
+on mapClickLocToPos me, x, y
+  x = x - pMargin.getAt(1)
+  y = y - pMargin.getAt(2)
+  x2 = integer(x / pTileSize.width)
+  y2 = integer(y / pTileSize.height)
+  mX = x2 * pTileSize.width
+  my = y2 * pTileSize.height
+  if mX > x then
+    x2 = x2 - 1
+  end if
+  if my > y then
+    y2 = y2 - 1
+  end if
+  mX = x2 * pTileSize.width
+  my = y2 * pTileSize.height
+  pos = [x2 + 1, y2 + 1]
+  return [pos, mX, my]
+end
+
+on mapClickPosToLoc me, x, y
+  x = x - 1 * 32 + pMargin.getAt(1)
+  y = y - 1 * 32 + pMargin.getAt(2)
+  return [x, y]
+end
+
+on new_pMapClickPos me, pos
+  pMapClickPos = pos
+end
+
+on memExist me, mem
+  memberCheck = member(mem).number
+  if memberCheck = -1 then
+    alert("Sorry, that member doesnÕt exist")
+    return #error
+  else
+    return #Ok
+  end if
+end
+
+on updateMargin me
+  mX = pScrSize.width - pActMapSize.getAt(1) * pTileSize.width
+  my = pScrSize.height - pActMapSize.getAt(2) * pTileSize.height
+  pMargin = [136, 2]
+  glob.mapBoardObj.updateLoc(pMargin.getAt(1), pMargin.getAt(2))
+end
+
+on activeLayer me, num
+  pActLayer = num
+end
+
+on whatIsIt me
+  OBJ = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.pointer
+  return OBJ
+end
+
+on mapEdit me, data
+  if pState = #input then
+    exit
+  end if
+  if data = "m" or data = "M" then
+    if pActLayer > 2 then
+      me.moveItem()
+      exit
+    end if
+  end if
+  case pActLayer of
+    1:
+      mem = "tx" & data
+      ask = me.memExist(mem)
+      if ask = #error then
+        exit
+      end if
+      pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).BKG = mem
+    2:
+      if data = "0" then
+        if pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).count > 0 and not voidp(pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ) then
+          OBJ = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.pointer
+          part = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.part
+          OBJ.terminate(part)
+          pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ = [:]
+        end if
+      else
+        mem = "tx" & data
+        ask = me.memExist(mem)
+        if ask = #error then
+          exit
+        end if
+        stats = value(member("swSetting").text)
+        OBJ = new(script("item_parent"), #wall, mem, pMapClickPos, stats)
+        glob.objs.add(OBJ)
+      end if
+    3:
+      if data = "0" then
+        if pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).count > 0 and not voidp(pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ) then
+          OBJ = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.pointer
+          part = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.part
+          OBJ.terminate(part)
+          pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ = [:]
+        end if
+      else
+        mem = data.icon
+        OBJ = new(script("item_parent"), #item, mem, pMapClickPos, data)
+        glob.objs.add(OBJ)
+      end if
+    4:
+      if data = "0" then
+        if pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).count > 0 and not voidp(pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ) then
+          if pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).count(#OBJ) < 1 then
+            exit
+          end if
+          OBJ = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.pointer
+          part = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.part
+          OBJ.terminate(part)
+          pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ = [:]
+        end if
+      else
+        if glob.mode = #play then
+          if glob.game_manager.pState = #UPLOAD then
+            OBJ = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.pointer
+            part = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.part
+            if OBJ.pType = #item and OBJ.pMemName = "1" then
+              pUploadDocks.add(pMapClickPos)
+              OBJ.terminate(part)
+              pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ = [:]
+            else
+              if OBJ.pType = #agent and OBJ.pTeam = #player then
+                OBJ.terminate(part)
+                pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ = [:]
+              end if
+            end if
+          end if
+        end if
+        mem = data.icon
+        OBJ = new(script("object_parent"), #player, #agent, mem, pMapClickPos, [], #dummyCmd, data)
+        glob.objs.add(OBJ)
+      end if
+  end case
+  me.drawMap()
+end
+
+on undoUpload me
+  if pUploadDocks.getOne(pMapClickPos) > 0 then
+    OBJ = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.pointer
+    part = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.part
+    glob.player_manager.returnAgent(OBJ.pStats.name)
+    OBJ.terminate(part)
+    pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ = [:]
+    data = glob.item_manager.getProp(#pItems, 1)
+    mem = data.icon
+    OBJ = new(script("item_parent"), #item, mem, pMapClickPos, data)
+    glob.objs.add(OBJ)
+    me.drawMap()
+  end if
+end
+
+on terminateBody me, pos
+  pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).OBJ = [:]
+end
+
+on terminateCell me, pos
+  OBJ = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).OBJ.pointer
+  part = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).OBJ.part
+  Mover = OBJ.passData()
+  OBJ.terminate(part)
+end
+
+on moveItemInPlay me, oldPos, newPos, click, click2
+  if glob.game_manager.pState = #UPLOAD then
+    exit
+  end if
+  OBJ = pActMapData.getAt(oldPos.getAt(1)).getAt(oldPos.getAt(2)).OBJ.pointer
+  part = pActMapData.getAt(oldPos.getAt(1)).getAt(oldPos.getAt(2)).OBJ.part
+  Mover = OBJ.passData()
+  id = OBJ.pId
+  OBJ.terminate(part)
+  OBJ = new(script("object_parent"), Mover.team, Mover.type, Mover.mem, newPos, Mover.body, #open, Mover.stats, id)
+  glob.objs.add(OBJ)
+  me.drawMap()
+  if not voidp(click2) then
+    click = click2
+  end if
+  glob.mapBoardObj.vMouseDown(click)
+end
+
+on moveItem me
+  if voidp(pMover) then
+    if pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).count(#OBJ) > 0 then
+      OBJ = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.pointer
+      part = pActMapData.getAt(pMapClickPos.getAt(1)).getAt(pMapClickPos.getAt(2)).OBJ.part
+      pMover = OBJ.passData()
+      OBJ.terminate(part)
+    else
+      put "ERROR, There is no obj to be moved!"
+    end if
+  else
+    OBJ = new(script("object_parent"), pMover.team, pMover.type, pMover.mem, pMapClickPos, pMover.body, #open, pMover.stats)
+    glob.objs.add(OBJ)
+    pMover = VOID
+  end if
+  me.drawMap()
+end
+
+on insertObj me, pos, OBJ, typ, part
+end
+
+on removeObjRef me, pos
+  pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).OBJ = [:]
+end
+
+on SaveData me
+  temp = [:]
+  temp.setAt(#name, pActMapName)
+  temp.setAt(#tile, pTileSize)
+  pObjData = []
+  i = 1
+  repeat while i <= glob.count(#objs)
+    OBJ = glob.getProp(#objs, i)
+    data = OBJ.passData()
+    pObjData.add(data)
+    i = 1 + i
+  end repeat
+  temp.setAt(#objs, pObjData)
+  mapStr = []
+  x = 1
+  repeat while x <= pActMapData.count
+    base = pActMapData.getAt(x)
+    y = 1
+    repeat while y <= base.count
+      mapStr.add(base.getAt(y).BKG)
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+  temp.setAt(#map, mapStr)
+  glob.file_manager.saveLevel(temp)
+end
+
+on openMap me, data, pos
+  pActMapName = data.getAt(#name)
+  member("map_name").text = pActMapName
+  pTileSize = data.getAt(#tile)
+  pObjData = data.getAt(#objs)
+  pActMapDataPos = 1
+  tempMap = duplicate(data.getAt(#map))
+  x = 1
+  repeat while x <= pActMapData.count
+    col = pActMapData.getAt(x)
+    y = 1
+    repeat while y <= col.count
+      pActMapData.getAt(x).getAt(y).BKG = tempMap.getAt(1)
+      tempMap.deleteAt(1)
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+  glob.objs = []
+  i = 1
+  repeat while i <= pObjData.count
+    data = pObjData.getAt(i)
+    dType = data.type
+    if dType = #agent then
+      dName = data.stats.name
+      j = 1
+      repeat while j <= glob.agent_manager.count(#pAgents)
+        lookUp = glob.agent_manager.getProp(#pAgents, j)
+        if lookUp.name = dName then
+          data.mem = lookUp.icon
+          data.stats.icon = lookUp.icon
+          data.stats.Movement = lookUp.Movement
+          data.stats.MoveCount = lookUp.MoveCount
+          data.stats.maxSize = lookUp.maxSize
+          data.stats.Actions = lookUp.Actions
+        else
+          j = 1 + j
+        end if
+      end repeat
+    end if
+    if data.type = #agent then
+      OBJ = new(script("object_parent"), data.team, data.type, data.mem, data.pos, data.body, #open, data.stats)
+    else
+      OBJ = new(script("item_parent"), data.type, data.mem, data.pos, data.stats, #open)
+    end if
+    glob.objs.add(OBJ)
+    i = 1 + i
+  end repeat
+  me.updateUserInputField()
+  me.drawMap()
+  glob.tileHiBox.resizeBox()
+end
+
+on agentExist me, pos
+  cell = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2))
+  if cell.count > 0 and not voidp(cell.OBJ) then
+    if cell.count(#OBJ) = 0 then
+      return 0
+    end if
+    objState = cell.OBJ.pointer.checkState()
+    if cell.OBJ.type = #agent and cell.OBJ.part = #head then
+      return [#OBJ: cell.OBJ.pointer, #part: cell.OBJ.part, #loc: pMapClickPos]
+    else
+      if cell.OBJ.type = #item then
+        return [#OBJ: cell.OBJ.pointer, #part: cell.OBJ.part, #loc: pMapClickPos]
+      else
+        return 0
+      end if
+    end if
+  end if
+end
+
+on returnCellData me, pos
+  data = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2))
+  return data
+end
+
+on returnCell me, pos, actType
+  if pos.getAt(1) < 1 or pos.getAt(1) > pActMapSize.getAt(1) or pos.getAt(2) < 1 or pos.getAt(2) > pActMapSize.getAt(2) then
+    return VOID
+  else
+    if pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).BKG = "tx0" then
+      if actType = "grid" then
+        return 1
+      else
+        return VOID
+      end if
+    else
+      data = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2))
+      return data
+    end if
+  end if
+end
+
+on attackCell me, pos, force
+  cell = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).OBJ
+  if cell.count = 0 then
+    put "No Target:attackCell "
+    agent = glob.mapBoardObj.pActAgent
+    if not voidp(agent) and not agent = 0 then
+      agent.OBJ.actionDone()
+    end if
+  else
+    if glob.game_manager.pTurn = cell.pointer.pTeam and glob.infoManager.pSpyBotCmd = #off then
+    else
+      SndSFX("snd_attack")
+      cell.pointer.upderAttack(force)
+    end if
+  end if
+end
+
+on growCell me, pos, amount
+  cell = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).OBJ
+  if cell.count = 0 then
+    put "No Target:growCell"
+  else
+    OBJ = cell.pointer
+    tSize = OBJ.count(#pBody) + 1
+    tLimit = OBJ.pStats.maxSize
+    if tSize + amount > tLimit then
+      amount = tLimit - tSize
+    else
+    end if
+    if amount > 0 then
+      cell.pointer.growBody(amount)
+    else
+    end if
+  end if
+end
+
+on modCell me, pos, modType, amount
+  cell = pActMapData.getAt(pos.getAt(1)).getAt(pos.getAt(2)).OBJ
+  if cell.count = 0 then
+    put "No Target:modCell"
+  else
+    cell.pointer.modAgent(modType, amount, pos)
+  end if
+end

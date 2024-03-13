@@ -1,0 +1,13 @@
+on readName
+  pool = ["0000", "1000", "0100", "0010", "0001", "1100", "0110", "0011", "1001", "1010", "0101", "1110", "0111", "1011", "1101", "1111"]
+  j = 0
+  repeat while j <= 19
+    base = 464 + j * 16
+    i = 1
+    repeat while i <= 16
+      member(base + i, "tiles").name = "com_" & j + 1 & "_body_" & pool.getAt(i)
+      i = 1 + i
+    end repeat
+    j = 1 + j
+  end repeat
+end

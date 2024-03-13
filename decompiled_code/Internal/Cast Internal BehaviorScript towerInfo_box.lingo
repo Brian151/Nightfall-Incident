@@ -1,0 +1,117 @@
+property my, pSp, pLoc, pType, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#towerInfoBox, me)
+  pSp = me.spriteNum
+  my = sprite(pSp)
+  pLoc = my.loc
+  pState = #hide
+end
+
+on reportShowState me
+  if pState = #hide then
+    return 0
+  else
+    return 1
+  end if
+end
+
+on hide me
+  pState = #hide
+  my.loc = pLoc
+  sendAllSprites(#follow)
+  updateStage()
+end
+
+on show me, miType, mIcon, miName, miData, miDesc, linkFlag
+  glob.setAt(#towerInfoz, [miType, mIcon, miName, miData, miDesc, linkFlag])
+  pState = #show
+  pType = miType
+  member("towerInfoBox_name").text = miName
+  member("towerInfoBox_desc").text = miDesc
+  coNum = glob.getPropRef(#WorldData, glob.towerID).company
+  sprite(pSp + 1).member = member("company_banner_" & coNum)
+  case miType of
+    "SMART":
+      member("towerInfoBox_slvl").text = ""
+      member("towerInfoBox_misc").text = ""
+      sprite(pSp + 2).member = member("but_node_smart")
+      sprite(pSp + 8).member = member("node.info.title.smart")
+      if linkFlag then
+        sprite(pSp + 2).visible = 1
+        sprite(pSp + 3).visible = 1
+        sprite(pSp + 4).visible = 0
+      else
+        sprite(pSp + 2).visible = 0
+        sprite(pSp + 3).visible = 0
+        sprite(pSp + 4).visible = 1
+      end if
+      sprite(pSp + 9).visible = 0
+      sprite(pSp + 10).visible = 0
+    "WAREZ":
+      member("towerInfoBox_slvl").text = ""
+      member("towerInfoBox_misc").text = ""
+      sprite(pSp + 2).member = member("but_node_warez")
+      sprite(pSp + 8).member = member("node.info.title.warez")
+      glob.warez.updateInventory()
+      temp = glob.warezIntroFlags.getOne(glob.towerID)
+      if temp = 0 then
+        glob.warezIntroFlags.add(glob.towerID)
+        case glob.towerID of
+          2:
+            glob.towerID = 44
+          12:
+            glob.towerID = 45
+          19:
+            glob.towerID = 46
+          29:
+            glob.towerID = 47
+        end case
+      end if
+      if linkFlag then
+        sprite(pSp + 2).visible = 1
+        sprite(pSp + 3).visible = 1
+        sprite(pSp + 4).visible = 0
+      else
+        sprite(pSp + 2).visible = 0
+        sprite(pSp + 3).visible = 0
+        sprite(pSp + 4).visible = 1
+      end if
+      sprite(pSp + 9).visible = 0
+      sprite(pSp + 10).visible = 0
+    "BATTLE":
+      member("towerInfoBox_slvl").text = "Security Level: " & miData.security
+      member("towerInfoBox_misc").text = "Mission Reward: " & miData.reward
+      sprite(pSp + 2).member = member("but_node_battle")
+      if glob.sLevel < miData.security then
+        sprite(pSp + 2).visible = 0
+        sprite(pSp + 3).visible = 0
+        sprite(pSp + 4).visible = 1
+        sprite(pSp + 8).member = member("node.info.title.restricted")
+        member("towerInfoBox_desc").text = member("Security_Level_Warning").text
+      else
+        if linkFlag then
+          sprite(pSp + 8).member = member("node.info.title.info")
+          sprite(pSp + 2).visible = 1
+          sprite(pSp + 3).visible = 1
+          sprite(pSp + 4).visible = 0
+        else
+          sprite(pSp + 2).visible = 0
+          sprite(pSp + 3).visible = 0
+          sprite(pSp + 4).visible = 1
+        end if
+      end if
+      if miData.creditItems > 0 then
+        sprite(pSp + 9).visible = 1
+        sprite(pSp + 10).visible = 1
+        member("cItemAmount").text = string(miData.creditItems)
+      else
+        sprite(pSp + 9).visible = 0
+        sprite(pSp + 10).visible = 0
+      end if
+  end case
+  my.locH = my.locH - 300
+  sendAllSprites(#follow)
+  updateStage()
+end

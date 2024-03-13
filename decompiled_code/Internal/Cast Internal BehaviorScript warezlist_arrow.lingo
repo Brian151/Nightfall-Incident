@@ -1,0 +1,12 @@
+global glob
+
+on beginSprite me
+  glob.warez.reportArrow(me.spriteNum)
+end
+
+on mouseDown me
+  repeat while the stillDown
+    delayTime(100)
+    glob.warez.arrowClicked(me.spriteNum)
+  end repeat
+end

@@ -1,0 +1,85 @@
+property pSnum, pHideFlag, pTime, pWhat
+global glob
+
+on beginSprite me
+  glob.setAt(#whatIgot, me)
+  pSnum = me.spriteNum - 1
+  pHideFlag = 0
+end
+
+on exitFrame me
+  if pHideFlag then
+    if pTime + 1500 < the milliSeconds then
+      pHideFlag = 0
+      me.hide()
+    end if
+  end if
+end
+
+on show me, typ, data
+  pWhat = [typ, data]
+  case typ of
+    #credits:
+      sprite(pSnum + 2).member = member("received_text_credits")
+      member("received_what_text").text = string(data)
+    #program:
+      sprite(pSnum + 2).member = member("received_text_program")
+      member("received_what_text").text = string(data)
+    #security:
+      sprite(pSnum + 2).member = member("received_text_security")
+      member("received_what_text").text = string(data)
+    #Message:
+      sprite(pSnum + 2).member = member("received_text_msg")
+      member("received_text_msg").text = string(data)
+      member("received_what_text").text = ""
+  end case
+  i = 1
+  repeat while i <= 3
+    sprite(pSnum + i).locH = sprite(pSnum + i).locH - 150
+    i = 1 + i
+  end repeat
+  updateStage()
+  pHideFlag = 1
+  pTime = the milliSeconds
+end
+
+on hide me
+  i = 1
+  repeat while i <= 3
+    sprite(pSnum + i).locH = sprite(pSnum + i).locH + 150
+    i = 1 + i
+  end repeat
+  if pWhat.getAt(1) = #security then
+    case pWhat.getAt(2) of
+      2:
+        sprite(812).vMouseDown(#bipass)
+        me.showNode(812)
+      3:
+        sprite(819).vMouseDown(#bipass)
+        me.showNode(819)
+      4:
+        sprite(829).vMouseDown(#bipass)
+        me.showNode(829)
+      5:
+        SndSFX("snd_blackout")
+        glob.blackout.show()
+        sprite(840).vMouseDown(#bipass)
+        glob.scrollMap = #YES
+    end case
+  end if
+end
+
+on showNode me, num
+  if glob.getPropRef(#WorldData, num - 800).state = #off then
+    glob.getPropRef(#WorldData, num - 800).state = #on
+    sprite(num).pState = #on
+  else
+    if glob.getPropRef(#WorldData, num - 800).state = #on then
+      glob.getPropRef(#WorldData, num - 800).state = #WIN
+      sprite(num).pState = #WIN
+    end if
+  end if
+  sprite(num).toggle()
+  glob.setAt(#scrollMap, #YES)
+  glob.file_manager.savePref()
+end

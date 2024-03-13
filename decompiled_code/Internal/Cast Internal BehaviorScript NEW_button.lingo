@@ -1,0 +1,7 @@
+global glob
+
+on mouseUp me
+  glob.map_manager.createNewMap()
+  sendAllSprites(#editOff)
+  sendAllSprites(#actLayer, 25, sprite(25).foreColor)
+end

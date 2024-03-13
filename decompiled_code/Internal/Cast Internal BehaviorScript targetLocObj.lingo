@@ -1,0 +1,28 @@
+property my, pLoc, pTargetPos
+global glob
+
+on beginSprite me
+  glob.setAt(#targetLock, me)
+  my = sprite(me.spriteNum)
+end
+
+on newloc me, newloc
+  pLoc = newloc
+end
+
+on showTargetLock me, newPos
+  exit
+  if glob.game_manager.pTurn = #com then
+    exit
+  end if
+  pTargetPos = newPos
+  my.loc = pLoc
+  my.blend = 50
+  updateStage()
+end
+
+on hideTargetLock me
+  pTargetPos = VOID
+  my.loc = point(800, 1000)
+  my.blend = 0
+end

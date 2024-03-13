@@ -1,0 +1,13 @@
+on beginSprite me
+  i = 1
+  repeat while i <= 100
+    puppetSprite(i, 0)
+    sprite(i).visible = 1
+    i = 1 + i
+  end repeat
+end
+
+on exitFrame me
+  SndCheckPlaylist()
+  go(the frame)
+end

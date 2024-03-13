@@ -1,0 +1,20 @@
+property my
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.blend = 30
+end
+
+on mouseWithin me
+  if my.blend = 0 then
+    exit
+  end if
+  my.blend = 60
+end
+
+on mouseLeave me
+  if my.blend = 0 then
+    exit
+  end if
+  my.blend = 30
+end

@@ -1,0 +1,7 @@
+global glob
+
+on mouseUp me
+  sendAllSprites(#selectCheckOff)
+  sendAllSprites(#resetTowerImg)
+  glob.smartnode.hide()
+end

@@ -1,0 +1,4 @@
+on mouseUp me
+  SndSFX("snd_select")
+  go("tutorial")
+end

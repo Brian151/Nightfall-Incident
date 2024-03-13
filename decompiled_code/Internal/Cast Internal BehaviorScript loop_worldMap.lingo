@@ -1,0 +1,41 @@
+property pFlag, pFrames
+global glob
+
+on beginSprite me
+  glob.player_manager.resetList()
+  pFrames = 0
+end
+
+on enterFrame me
+  pFrames = pFrames + 1
+  if pFrames = 5 then
+    SndMusicStart("music_worldmap")
+  end if
+  SndCheckPlaylist()
+end
+
+on exitFrame me
+  if voidp(pFlag) and glob.newgame then
+    sprite(801).vMouseDown(#bipass)
+    pFlag = 1
+    glob.setAt(#towerID, 43)
+    glob.newgame = 0
+    glob.dialogueManager.show()
+  else
+    if glob.towerID = 43 and glob.getAt(#tutorialDone) then
+      glob.setAt(#towerID, 3)
+      sprite(803).vMouseDown(#bipass)
+      glob.setAt(#tutorialDone, 0)
+    end if
+  end if
+  if glob.scrollMap = #NO then
+    a = glob.towerInfoBox.reportShowState()
+    b = glob.battleResultPanel.reportShowState()
+    c = glob.dialogueManager.reportShowState()
+    D = glob.warez.reportShowState()
+    if [a, b, c, D].getOne(1) = 0 then
+      glob.scrollMap = #YES
+    end if
+  end if
+  go(the frame)
+end

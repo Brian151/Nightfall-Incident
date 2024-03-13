@@ -1,0 +1,18 @@
+property my, pBlend
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pBlend = 10
+end
+
+on exitFrame me
+  my.blend = my.blend + pBlend
+  if pBlend > 0 and my.blend > 80 then
+    pBlend = -pBlend
+  else
+    if pBlend < 0 and my.blend < 0 then
+      pBlend = -pBlend
+    end if
+  end if
+end

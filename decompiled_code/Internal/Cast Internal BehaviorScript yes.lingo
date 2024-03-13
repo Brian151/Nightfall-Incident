@@ -1,0 +1,6 @@
+global glob
+
+on mouseDown me
+  SndSFX("snd_confirm")
+  glob.confirm.YES()
+end

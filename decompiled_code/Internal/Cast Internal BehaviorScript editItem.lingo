@@ -1,0 +1,6 @@
+global glob
+
+on mouseUp me
+  myColor = sprite(me.spriteNum).foreColor
+  glob.layer.actLayer(me.spriteNum, myColor)
+end

@@ -1,0 +1,52 @@
+property pData, pPos, pName, pNameText, pMemName, pAction, pTarget, pRequired, pDesc, pState
+global glob
+
+on new me, pos
+  me.loadData()
+  pPos = pos
+  pName = pData.getAt(pos).name
+  pNameText = pData.getAt(pos).NAMETEXT
+  pMemName = pData.getAt(pos).icon
+  pAction = pData.getAt(pos).action
+  pTarget = pData.getAt(pos).target
+  pRequired = pData.getAt(pos).required
+  pDesc = pData.getAt(pos).description
+  pState = #READY
+  return me
+end
+
+on loadData me
+  pData = []
+  temp = cleanWhitespace(member("sbybot_data").text)
+  pData = value(temp)
+end
+
+on passData me
+  data = [#name: pName, #NAMETEXT: pNameText, #icon: pMemName, #action: pAction, #target: pTarget, #description: pDesc]
+  return data
+end
+
+on checkRequirement me, OBJ
+  oSize = OBJ.count(#pBody) + 1
+  base = pRequired.getAt(2)
+  case pRequired.getAt(1) of
+    #greater:
+      if base <= oSize then
+        return 1
+      else
+        return 0
+      end if
+    #smaller:
+      if base >= oSize then
+        return 1
+      else
+        return 0
+      end if
+  end case
+end
+
+on exeAction me
+end
+
+on loopFrame me
+end

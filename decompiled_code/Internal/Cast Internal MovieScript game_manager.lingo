@@ -1,0 +1,129 @@
+property pState, pWinner, pTurn, pAgentDone
+global glob
+
+on new me
+  pState = #UPLOAD
+  pTurn = #player
+  pAgentDone = []
+  glob.map_manager.pActLayer = 4
+  glob.setAt(#ai_manager, new(script("ai_manager")))
+  me.assignAgentId()
+  return me
+end
+
+on reportBattleEnd me, who
+  pState = #BattleOver
+  pWinner = who
+  delayTime(500)
+  glob.endBattleBoard.show(who)
+end
+
+on changeState me, state
+  pState = state
+end
+
+on assignAgentId me
+  id = 0
+  i = 1
+  repeat while i <= glob.count(#objs)
+    id = id + 1
+    glob.getPropRef(#objs, i).idIs(id)
+    i = 1 + i
+  end repeat
+end
+
+on switchTurn me
+  if not glob.game_manager.pState = #BATTLE then
+    exit
+  end if
+  glob.mapBoardObj.turnEndReset()
+  pAgentDone = []
+  if pTurn = #player and glob.getAt(#playerFlag) then
+    glob.checkMarks.hide()
+    pTurn = #com
+    glob.setAt(#playerFlag, 0)
+    member("playModeBox").text = pTurn & "' Turn"
+    glob.ai_manager.updateComAgentsList()
+    if glob.ai_manager.count(#pComAgents) > 0 then
+      glob.turnSwitchPanel.show(pTurn)
+    end if
+    glob.ai_manager.aiPlay()
+  else
+    if pTurn = #com then
+      glob.checkMarks.hide()
+      pTurn = #player
+      glob.setAt(#playerFlag, 0)
+      glob.game_manager.pAgentDone = []
+      member("playModeBox").text = pTurn & "' Turn"
+      glob.turnSwitchPanel.show(pTurn)
+    end if
+  end if
+end
+
+on updateState me, data
+  pState = data
+end
+
+on whosTurn me
+  return pTurn
+end
+
+on addFinishedAgent me, id, team, sp
+  if not team = glob.game_manager.pTurn then
+    exit
+  end if
+  glob.checkMarks.showMark(sprite(sp).loc)
+  glob.ai_manager.checkEndBattle()
+  if pAgentDone.getOne(id) = 0 then
+    pAgentDone.add(id)
+  end if
+  glob.setAt(#undoFlag, 1)
+  if glob.game_manager.pTurn = #com then
+    glob.ai_manager.agentDone(pAgentDone.count)
+  else
+    glob.ai_manager.readyToSwitch(pAgentDone.count, pAgentDone)
+  end if
+end
+
+on amIdone me, id
+  num = pAgentDone.getOne(id)
+  if num > 0 then
+    num = 1
+  end if
+  return num
+end
+
+on isDone me, id
+  if voidp(id) then
+    put "obj is void"
+    exit
+  end if
+  pos = pAgentDone.getOne(id)
+  if pos > 0 then
+    return 1
+  else
+    return 0
+  end if
+end
+
+on removeUploadSpots me
+  i = 1
+  repeat while i <= glob.count(#objs)
+    OBJ = glob.getProp(#objs, i)
+    if OBJ.pType = #item and OBJ.pStats.icon = 1 then
+      OBJ.terminate(#head)
+      glob.map_manager.getPropRef(#pActMapData, OBJ.getProp(#pPos, 1)).getAt(OBJ.getProp(#pPos, 2)).OBJ = [:]
+    end if
+    i = 1 + i
+  end repeat
+end
+
+on doItemStuff me, OBJ
+  typ = OBJ.pStats.type
+  OBJ.terminate(#head, typ)
+end
+
+on selectNext me
+  glob.selectNextPlayer = 0
+  glob.ai_manager.selectNextPlayerAgent(pAgentDone)
+end

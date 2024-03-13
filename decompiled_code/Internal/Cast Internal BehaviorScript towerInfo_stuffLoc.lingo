@@ -1,0 +1,16 @@
+property my, pMaster, pLoc
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pMaster = sprite(glob.towerInfoBox.spriteNum)
+  pLoc = my.loc - glob.towerInfoBox.pLoc
+end
+
+on exitFrame me
+  me.follow()
+end
+
+on follow me
+  my.loc = pMaster.loc + pLoc
+end

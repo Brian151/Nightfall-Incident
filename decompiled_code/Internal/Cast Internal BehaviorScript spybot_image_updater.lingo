@@ -1,0 +1,15 @@
+property my, pId
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pId = glob.SPYBOT
+  my.member = member("spybot_" & pId & "_image")
+end
+
+on exitFrame me
+  if pId <> glob.player_manager.pSpyBot.id then
+    pId = glob.SPYBOT
+    my.member = member("spybot_" & pId & "_image")
+  end if
+end

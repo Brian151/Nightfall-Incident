@@ -1,0 +1,20 @@
+global glob
+
+on beginSprite me
+  if the frameLabel = "title" then
+    SndSFX("snd_titlescreen")
+    SndMusicStart("music_intro")
+  else
+    if the frameLabel = "entry" then
+    else
+      if the frameLabel = "edit" then
+        glob.setAt(#SPYBOT, 1)
+      end if
+    end if
+  end if
+end
+
+on exitFrame me
+  SndCheckPlaylist()
+  go(the frame)
+end

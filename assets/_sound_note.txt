@@ -1,0 +1,12 @@
+TODO : convert all to both formats
+
+sound : 
+> WAV
+
+snd_netload_<1-5>/gamelab : 
+> WAV
+
+snd_netload_<2,3,5>/r543 : 
+some aren't exported as SWA
+
+ 

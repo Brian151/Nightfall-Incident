@@ -1,0 +1,47 @@
+property pMove
+global glob
+
+on beginSprite me
+  glob.setAt(#particle, me)
+end
+
+on doit me, sLoc, typ
+  pMove = []
+  mem = "particle_" & typ
+  i = 300
+  repeat while i <= 339
+    sprite(i).member = member(mem)
+    sprite(i).loc = sLoc
+    sprite(i).blend = 100
+    sprite(i).rotation = 0
+    sprite(i).stretch = 0
+    Angle = random(36) * 10
+    speed = random(10)
+    vX = GetVx(Angle, speed)
+    vY = GetVy(Angle, speed)
+    pMove.add(point(vX, vY))
+    i = 1 + i
+  end repeat
+  updateStage()
+  loopty = 1
+  repeat while loopty <= 20
+    i = 300
+    repeat while i <= 339
+      sprite(i).loc = sprite(i).loc + pMove.getAt(i - 299)
+      sprite(i).blend = sprite(i).blend - 5
+      sprite(i).rotation = sprite(i).rotation + 5
+      i = 1 + i
+    end repeat
+    if loopty mod 2 = 0 then
+      delayTime(50)
+    end if
+    updateStage()
+    loopty = 1 + loopty
+  end repeat
+  i = 300
+  repeat while i <= 339
+    sprite(i).loc = point(1000, 1000)
+    i = 1 + i
+  end repeat
+  updateStage()
+end

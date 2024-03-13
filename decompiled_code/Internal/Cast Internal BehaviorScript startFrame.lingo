@@ -1,0 +1,6 @@
+global glob
+
+on exitFrame me
+  sprite(1).frame = 371
+  go("title")
+end

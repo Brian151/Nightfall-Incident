@@ -1,0 +1,18 @@
+property my
+global glob
+
+on beginSprite me
+  glob.setAt(#towerInfoName, me)
+  my = sprite(me.spriteNum)
+  me.hide()
+end
+
+on show me, newloc, data
+  my.loc = newloc + point(-20, 60)
+  my.member.text = data
+end
+
+on hide me
+  my.loc = point(1000, 1000)
+  my.member.text = ""
+end

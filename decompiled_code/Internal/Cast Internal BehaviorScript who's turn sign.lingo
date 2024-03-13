@@ -1,0 +1,30 @@
+property my, pSp, pTower, pResult
+global glob
+
+on beginSprite me
+  glob.setAt(#turnSwitchPanel, me)
+  pSp = me.spriteNum - 1
+  my = sprite(me.spriteNum)
+end
+
+on hide me
+  my.locH = my.locH + 400
+  updateStage()
+end
+
+on show me, who
+  SndSFX("snd_endturn")
+  case who of
+    #player:
+      my.member = member("window_turn_player")
+    #com:
+      my.member = member("window_turn_com")
+  end case
+  my.locH = my.locH - 400
+  updateStage()
+  delayTime(1000)
+  me.hide()
+  if who = #player then
+    glob.selectNextPlayer = 1
+  end if
+end

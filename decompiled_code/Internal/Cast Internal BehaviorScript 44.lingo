@@ -1,0 +1,6 @@
+global glob
+
+on mouseUp me
+  data = member("cmd_name").text
+  glob.tileHiBox.addAction(data)
+end

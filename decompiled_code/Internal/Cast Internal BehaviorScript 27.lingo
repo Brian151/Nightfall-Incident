@@ -1,0 +1,22 @@
+property my, pObj, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#icon, me)
+  my = sprite(me.spriteNum)
+  pState = #hide
+end
+
+on show me, OBJ
+  pState = #show
+  pObj = OBJ
+  my.member = member(pObj.pMemName)
+end
+
+on exitFrame me
+  if pState = #show then
+    my.loc = the mouseLoc - point(16, 16)
+  else
+    my.loc = point(1000, 1000)
+  end if
+end

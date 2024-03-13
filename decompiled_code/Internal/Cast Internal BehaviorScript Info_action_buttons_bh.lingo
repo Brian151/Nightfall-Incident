@@ -1,0 +1,42 @@
+property my, pMem
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+end
+
+on mouseUp me
+  if not voidp(glob.getAt(#game_manager)) then
+    if glob.game_manager.pState = #BATTLE then
+      glob.mapBoardObj.moveDone()
+    end if
+  end if
+  SndSFX("snd_info_action")
+  glob.infoManager.actionSelected(me.spriteNum)
+end
+
+on exitFrame me
+  if glob.mapBoardObj.pActAgent = 0 and glob.infoManager.pRealPos = 0 then
+    my.blend = 0
+  else
+    if not glob.game_manager.pState = #BATTLE then
+      my.member = member("but_info_noAction")
+      my.blend = 50
+    else
+      if not glob.mapBoardObj.pActAgent = 0 then
+        if glob.mapBoardObj.pActAgent.OBJ.pType = #item then
+          my.blend = 0
+        else
+          if glob.mapBoardObj.pActAgent.OBJ.pTeam = #com then
+            my.member = member("but_info_noAction")
+            my.blend = 50
+          else
+            my.blend = 100
+          end if
+        end if
+      else
+        my.blend = 100
+      end if
+    end if
+  end if
+end

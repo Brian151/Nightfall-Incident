@@ -1,0 +1,580 @@
+property pComAgents, pPlayerAgents, pActCom, pUnitsDone, pAIdone, pFinishedCom, pWinFlag, pObjNum
+global glob
+
+on new me
+  pObjNum = 0
+  me.checkWinFlag()
+  me.updatePlayerAgentsList()
+  me.updateComAgentsList()
+  pObjNum = pObjNum + pComAgents.count + pPlayerAgents.count
+  return me
+end
+
+on agentDone me, num
+  whosTurn = glob.game_manager.pTurn
+  if whosTurn = #com and num >= pComAgents.count then
+    glob.game_manager.switchTurn()
+  end if
+end
+
+on readyToSwitch me, num, agentDone
+  if glob.game_manager.pTurn = #player and num >= me.playerAgentNum() then
+    put "switchFlag = 1:" & num && me.playerAgentNum()
+    glob.setAt(#switchFlag, 1)
+  else
+    if glob.game_manager.pTurn = #player then
+      glob.setAt(#selectNextPlayer, 1)
+    end if
+  end if
+end
+
+on checkWinFlag me
+  pWinFlag = 0
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if agent.OBJ.pType = #item then
+          if agent.OBJ.pStats.type = #flag then
+            pWinFlag = 1
+          end if
+          pObjNum = pObjNum + 1
+        else
+          if agent.part = #body then
+            pObjNum = pObjNum + 1
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+end
+
+on playerAgentNum me
+  temp = []
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if agent.OBJ.pType = #item then
+        else
+          if not agent.part = #head then
+          else
+            if agent.OBJ.pTeam = #player then
+              temp.add(agent.OBJ)
+            end if
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+  return temp.count
+end
+
+on comAgentNum me
+  temp = []
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if agent.OBJ.pType = #item then
+        else
+          if not agent.part = #head then
+          else
+            if agent.OBJ.pTeam = #com then
+              temp.add(agent.OBJ)
+            end if
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+  return temp.count
+end
+
+on comAgentReset me, passedObj
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if agent.OBJ.pType = #item then
+        else
+          if not agent.part = #head then
+          else
+            if agent.OBJ.pTeam = #com then
+              if voidp(passedObj) and agent.OBJ.pState = #action then
+                agent.OBJ.pState = #move
+                agent.OBJ.pStats.MoveCount = agent.OBJ.pStats.Movement
+              else
+                if passedObj = agent.OBJ and agent.OBJ.pState = #action then
+                  agent.OBJ.pState = #move
+                  agent.OBJ.pStats.MoveCount = agent.OBJ.pStats.Movement
+                end if
+              end if
+            end if
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+end
+
+on checkEndBattle me
+  if me.comAgentNum() = 0 and not pWinFlag then
+    SndMusicEnd()
+    glob.game_manager.reportBattleEnd(#player)
+  else
+    if me.playerAgentNum() = 0 then
+      SndMusicEnd()
+      glob.game_manager.reportBattleEnd(#com)
+    end if
+  end if
+end
+
+on aiPlay me
+  if glob.game_manager.pState = #BattleOver then
+    exit
+  end if
+  me.comAgentReset()
+  me.updatePlayerAgentsList()
+  me.updateComAgentsList()
+  pFinishedCom = []
+  pAIdone = 0
+  pActionDone = 0
+  if pComAgents.count = 0 and glob.game_manager.pTurn = #com then
+    put "computer is switching turn, should be player's turn now"
+    glob.game_manager.switchTurn()
+    exit
+  end if
+  i = 1
+  repeat while i <= pComAgents.count
+    if glob.game_manager.pState = #BattleOver then
+      exit
+    end if
+    me.updatePlayerAgentsList()
+    agent = pComAgents.getAt(i)
+    pActCom = agent
+    pos = agent.pPos
+    movRange = agent.pStats.Movement
+    click = glob.map_manager.mapClickPosToLoc(pos.getAt(1), pos.getAt(2))
+    glob.mapBoardObj.vMouseDown(click)
+    actionData = me.reportActionStuff(agent)
+    requiredSize = actionData.getAt(1).requiredSize
+    damagePoint = actionData.getAt(1).damage
+    attackRange = actionData.getAt(1).range
+    myBodySize = agent.count(#pBody) + 1
+    diff = requiredSize - myBodySize
+    dist = 100
+    damage = 100
+    targetobj = 0
+    case symbol(actionData.getAt(1).type) of
+      #attack:
+        j = 1
+        repeat while j <= pPlayerAgents.count
+          pPos = pPlayerAgents.getAt(j).pPos
+          playerBody = pPlayerAgents.getAt(j).count(#pBody) + 1
+          tempDist = sqrt(power(pPos.getAt(1) - pos.getAt(1), 2) + power(pPos.getAt(2) - pos.getAt(2), 2))
+          if tempDist < dist then
+            dist = tempDist
+            targetobj = pPlayerAgents.getAt(j)
+          end if
+          j = 1 + j
+        end repeat
+      #grow:
+        j = 1
+        repeat while j <= pComAgents.count
+          pPos = pComAgents.getAt(j).pPos
+          temp = sqrt(power(pPos.getAt(1) - pos.getAt(1), 2) + power(pPos.getAt(2) - pos.getAt(2), 2))
+          if temp < dist then
+            dist = temp
+            targetobj = pComAgents.getAt(j)
+          end if
+          j = 1 + j
+        end repeat
+      #grid:
+      #sizeMod:
+        j = 1
+        repeat while j <= pComAgents.count
+          pPos = pComAgents.getAt(j).pPos
+          temp = sqrt(power(pPos.getAt(1) - pos.getAt(1), 2) + power(pPos.getAt(2) - pos.getAt(2), 2))
+          if temp < dist then
+            dist = temp
+            targetobj = pComAgents.getAt(j)
+          end if
+          j = 1 + j
+        end repeat
+      #speedMod:
+        j = 1
+        repeat while j <= pComAgents.count
+          pPos = pComAgents.getAt(j).pPos
+          temp = sqrt(power(pPos.getAt(1) - pos.getAt(1), 2) + power(pPos.getAt(2) - pos.getAt(2), 2))
+          if temp < dist then
+            dist = temp
+            targetobj = pComAgents.getAt(j)
+          end if
+          j = 1 + j
+        end repeat
+    end case
+    if not targetobj = 0 then
+      if movRange > 0 then
+        trapped = me.checkTrapped(pos)
+        if trapped then
+          agent.pStats.MoveCount = 0
+          movRange = 0
+        end if
+      end if
+      glob.targetRange.showArrows()
+      updateStage()
+      grid = glob.targetRange.pGrid
+      cellz = []
+      cellzDmg = []
+      attackFlag = 0
+      w = 1
+      repeat while w <= grid.count
+        h = 1
+        repeat while h <= grid.getAt(1).count
+          if not grid.getAt(w).getAt(h) = "." then
+            dist = glob.targetRange.moveDistance([w, h], targetobj.pPos)
+            attack = glob.targetRange.seekCanAttack([w, h], damagePoint)
+            if not attack = 0 then
+              attackFlag = 1
+              cellzDmg.add([#dmg: attack, #dist: dist, #pos: [w, h], #attack: 1])
+              cellz.add([#dist: dist, #pos: [w, h], #attack: 1])
+            else
+              if integer(dist) < diff then
+                cellz.add([#dist: 1, #pos: [w, h], #attack: attack])
+              else
+                cellz.add([#dist: dist, #pos: [w, h], #attack: 1])
+              end if
+            end if
+          end if
+          h = 1 + h
+        end repeat
+        w = 1 + w
+      end repeat
+      sort(cellz)
+      sort(cellzDmg)
+      glob.setAt(#debug, [cellz, cellzDmg, attackFlag])
+      moveTo = 0
+      if movRange = 0 then
+        if agent.pStats.Movement > 0 then
+          moveTo = 0
+        else
+          moveTo = [#dmg: attack, #dist: dist, #pos: pComAgents.getAt(i).pPos, #attack: 1]
+        end if
+      else
+        if attackFlag then
+          moveTo = cellzDmg.getAt(1)
+        else
+          if cellz.count = 0 then
+            agent.pStats.MoveCount = 0
+            moveTo = [#dmg: attack, #dist: dist, #pos: pComAgents.getAt(i).pPos, #attack: 1]
+          else
+            moveTo = cellz.getAt(1)
+          end if
+        end if
+      end if
+      if moveTo = 0 then
+        glob.mapBoardObj.moveDone()
+      else
+        posData = glob.targetRange.findPathForAgent(moveTo.pos)
+        if posData = 0 then
+          delayTime(400)
+          glob.mapBoardObj.actionDone()
+        else
+          path = []
+          temp = posData.count
+          if posData.getAt(temp).count = 0 then
+          else
+            poz1 = posData.getAt(temp).getAt(random(posData.getAt(temp).count)).getAt(1)
+            z = temp - 1
+            repeat while z >= 1
+              path.add(poz1)
+              j = 1
+              repeat while j <= posData.getAt(z).count
+                poz2 = posData.getAt(z).getAt(j).getAt(2)
+                if poz1 = poz2 then
+                  poz1 = posData.getAt(z).getAt(j).getAt(1)
+                else
+                  j = 1 + j
+                end if
+              end repeat
+              z = 65535 + z
+            end repeat
+            pathNum = 1
+            repeat while pathNum <= path.count
+              pos = path.getAt(pathNum)
+              temp = glob.targetRange.rangeToMap(pos.getAt(1), pos.getAt(2))
+              path.setAt(pathNum, temp)
+              pathNum = 1 + pathNum
+            end repeat
+            if path.count < agent.pStats.Movement then
+              agent.pStats.MoveCount = path.count
+            end if
+            m = 1
+            repeat while m <= path.count
+              pos = path.getAt(m)
+              spot = pos
+              glob.targetRange.vMouseDown(spot)
+              if pFinishedCom.getOne(agent.pId) = 0 then
+                glob.targetRange.showArrows(agent.pId)
+              end if
+              updateStage()
+              delayTime(200)
+              m = 1 + m
+            end repeat
+          end if
+        end if
+      end if
+    end if
+    updateStage()
+    delayTime(100)
+    i = 1 + i
+  end repeat
+  pAIdone = 1
+end
+
+on checkTrapped me, pos
+  mapPos = pos
+  vX = glob.map_manager.count(#pActMapData)
+  vY = glob.map_manager.getPropRef(#pActMapData, 1).count
+  flag = 0
+  if mapPos.getAt(1) > 1 then
+    data = glob.map_manager.returnCellData([mapPos.getAt(1) - 1, mapPos.getAt(2)])
+    if data.BKG = "tx0" then
+      flag = flag + 1
+    else
+      if data.count(#OBJ) > 0 then
+        flag = flag + 1
+      end if
+    end if
+  end if
+  if mapPos.getAt(1) < vX then
+    data = glob.map_manager.returnCellData([mapPos.getAt(1) + 1, mapPos.getAt(2)])
+    if data.BKG = "tx0" then
+      flag = flag + 1
+    else
+      if data.count(#OBJ) > 0 then
+        flag = flag + 1
+      end if
+    end if
+  end if
+  if mapPos.getAt(2) > 1 then
+    data = glob.map_manager.returnCellData([mapPos.getAt(1), mapPos.getAt(2) - 1])
+    if data.BKG = "tx0" then
+      flag = flag + 1
+    else
+      if data.count(#OBJ) > 0 then
+        flag = flag + 1
+      end if
+    end if
+  end if
+  if mapPos.getAt(2) < vY then
+    data = glob.map_manager.returnCellData([mapPos.getAt(1), mapPos.getAt(2) + 1])
+    if data.BKG = "tx0" then
+      flag = flag + 1
+    else
+      if data.count(#OBJ) > 0 then
+        flag = flag + 1
+      end if
+    end if
+  end if
+  if flag = 4 then
+    return 1
+  else
+    return 0
+  end if
+end
+
+on reportActionStuff me, OBJ
+  actionNames = OBJ.pStats.Actions
+  actionData = []
+  i = 1
+  repeat while i <= actionNames.count
+    cmd = actionNames.getAt(i)
+    cmd = glob.cmd_manager.actionDesc(cmd)
+    actionData.add(cmd)
+    i = 1 + i
+  end repeat
+  return actionData
+end
+
+on readyToAttack me, OBJ
+  if pFinishedCom.getOne(OBJ.pId) = 0 then
+    pFinishedCom.add(OBJ.pId)
+    actionNames = OBJ.pStats.Actions
+    actionData = []
+    i = 1
+    repeat while i <= actionNames.count
+      cmd = actionNames.getAt(i)
+      cmd = glob.cmd_manager.actionDesc(cmd)
+      actionData.add(cmd)
+      i = 1 + i
+    end repeat
+    if glob.targetRange.pAttackFlag then
+      data = glob.targetRange.lockOnTarget(actionData.getAt(1).type)
+      delayTime(250)
+      if data = 0 then
+        glob.mapBoardObj.actionDone()
+      else
+        lockedTarget = data.getAt(1).pointer
+        x = data.getAt(2)
+        y = data.getAt(3)
+        click = glob.map_manager.mapClickPosToLoc(x, y)
+        OBJ.moveAgent(VOID, [x, y], click)
+      end if
+    else
+      glob.mapBoardObj.actionDone()
+    end if
+  end if
+  if pAIdone and glob.game_manager.pTurn = #com then
+    put "double?"
+    glob.game_manager.switchTurn()
+  end if
+end
+
+on updatePlayerAgentsList me
+  pPlayerAgents = []
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if not agent.part = #head then
+        else
+          if agent.OBJ.pType = #item then
+          else
+            if agent.OBJ.pTeam = #player then
+              pPlayerAgents.add(agent.OBJ)
+            end if
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+end
+
+on updateComAgentsList me
+  pComAgents = []
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if not agent.part = #head then
+        else
+          if agent.OBJ.pType = #item then
+          else
+            if agent.OBJ.pTeam = #com then
+              pComAgents.add(agent.OBJ)
+            end if
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+end
+
+on selectNextPlayerAgent me, agentDone
+  me.updatePlayerAgentsList()
+  i = 1
+  repeat while i <= pPlayerAgents.count
+    if glob.game_manager.pState = #BattleOver then
+      exit
+    end if
+    agent = pPlayerAgents.getAt(i)
+    if agentDone.getOne(agent.pId) = 0 then
+      pos = agent.pPos
+      click = glob.map_manager.mapClickPosToLoc(pos.getAt(1), pos.getAt(2))
+      glob.mapBoardObj.vMouseDown(click)
+    else
+      glob.selectNextPlayer = 0
+      i = 1 + i
+    end if
+  end repeat
+end
+
+on findUploadSpot me
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if agent.OBJ.pType = #item then
+          if agent.OBJ.pStats.type = #DOCK then
+            return agent.OBJ
+          end if
+        else
+          if not agent.part = #head then
+          else
+            if agent.OBJ.pTeam = #player then
+            else
+            end if
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+  return 0
+end
+
+on clearUploadSpot me
+  x = 1
+  repeat while x <= glob.map_manager.count(#pActMapData)
+    y = 1
+    repeat while y <= glob.map_manager.getPropRef(#pActMapData, 1).count
+      agent = glob.map_manager.agentExist([x, y])
+      if agent = 0 then
+      else
+        if agent.OBJ.pType = #item then
+          if agent.OBJ.pStats.type = #DOCK then
+            OBJ = agent.OBJ
+            part = #head
+            OBJ.terminate(part)
+            glob.map_manager.getPropRef(#pActMapData, x).getAt(y).OBJ = [:]
+          end if
+        else
+          if not agent.part = #head then
+          else
+            if agent.OBJ.pTeam = #player then
+            else
+            end if
+          end if
+        end if
+      end if
+      y = 1 + y
+    end repeat
+    x = 1 + x
+  end repeat
+end

@@ -1,0 +1,44 @@
+property my, pState, pCount
+global glob
+
+on beginSprite me
+  glob.setAt(#FXguy, me)
+  my = sprite(me.spriteNum)
+end
+
+on doEffect me, cmd, locIs, mem, creditAmount
+  case cmd of
+    #attack:
+      my.member = member(mem)
+      my.loc = locIs
+      updateStage()
+      SndSFX("snd_attack")
+      i = 1
+      repeat while i <= 5
+        my.rect = my.rect + rect(-20, -20, 20, 20)
+        my.rotation = my.rotation + 150
+        updateStage()
+        delayTime(10)
+        i = 1 + i
+      end repeat
+    #CREDIT:
+      my.member = member(mem)
+      my.loc = locIs
+      updateStage()
+      i = 1
+      repeat while i <= 5
+        my.rect = my.rect + rect(-20, -20, 20, 20)
+        my.rotation = my.rotation + 150
+        my.blend = my.blend - 10
+        updateStage()
+        delayTime(10)
+        i = 1 + i
+      end repeat
+      my.blend = 0
+      glob.creditEarned.show(my.loc, creditAmount)
+  end case
+  my.blend = 100
+  my.rect = rect(1000, 1000, 1100, 1100)
+  my.loc = point(1000, 1000)
+  updateStage()
+end

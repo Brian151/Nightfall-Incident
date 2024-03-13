@@ -1,0 +1,17 @@
+provided to Brian151 by former Gamelab employees
+
+[SHA-1]
+snd_netload_1.cct
+4485081f218cbd16b2a47d76071af12d63eef9dc
+
+snd_netload_2.cct
+1048881ad41d3d59efae71acf1e01ab021bed7b5
+
+snd_netload_3.cct
+d6f7c9481e66871b8a526862b8fcad68fc26030f
+
+snd_netload_4.cct
+09efc96c606493d23250fc352d1fd5b39d20747f
+
+snd_netload_5.cct
+9b4d01dfdebcfe600dfd604d5ef9b003f6877318

@@ -1,0 +1,12 @@
+global glob
+
+on mouseUp me
+  glob.mode = #map
+  spBank()
+  glob.map_manager.createNewMap()
+  sndMusicStop()
+  if the frameLabel = "play" then
+    glob.worldMap_manager.battleResult(#lost)
+  end if
+  go("map")
+end

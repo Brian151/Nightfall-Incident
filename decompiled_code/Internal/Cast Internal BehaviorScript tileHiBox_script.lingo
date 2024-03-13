@@ -1,0 +1,94 @@
+property my, pActAgent, pPos, pBlend
+global glob
+
+on beginSprite me
+  glob.setAt(#tileHiBox, me)
+  my = sprite(me.spriteNum)
+  my.width = glob.map_manager.pTileSize.width
+  my.height = glob.map_manager.pTileSize.height
+  if the frameLabel = "play" then
+    my.visible = 0
+  end if
+  my.blend = 0
+  pBlend = 10
+end
+
+on exitFrame me
+  my.blend = my.blend + pBlend
+  if pBlend > 0 and my.blend > 80 then
+    pBlend = -pBlend
+  else
+    if pBlend < 0 and my.blend < 0 then
+      pBlend = -pBlend
+    end if
+  end if
+end
+
+on resizeBox me
+  my.width = glob.map_manager.pTileSize.width
+  my.height = glob.map_manager.pTileSize.height
+end
+
+on moveTo me, x, y, pos
+  my.loc = point(x, y)
+  pPos = pos
+  me.checkForObj()
+end
+
+on changeColor me, myColor
+  my.foreColor = myColor
+end
+
+on changeTeam me, team
+  if objectp(pActAgent) then
+    pActAgent.OBJ.changeTeam(team)
+  end if
+end
+
+on visToggle me, it
+  my.visible = it
+end
+
+on checkForObj me
+  agent = glob.map_manager.agentExist(pPos)
+  if agent = 0 then
+    pActAgent = 0
+    me.updateAttributeBox("")
+  else
+    if agent.part = #body then
+      pActAgent = 0
+      me.updateAttributeBox("")
+    else
+      pActAgent = agent
+      if pActAgent.OBJ.pType = #agent then
+        if pActAgent.OBJ.pTeam = #player and glob.game_manager.pTurn = #player then
+          glob.ai_manager.comAgentReset()
+        end if
+        Actions = pActAgent.OBJ.pStats.Actions
+        data = ""
+        i = 1
+        repeat while i <= Actions.count
+          if i = Actions.count then
+            data = data & Actions.getAt(i)
+          else
+            data = data & Actions.getAt(i) & RETURN
+          end if
+          i = 1 + i
+        end repeat
+        me.updateAttributeBox(data)
+      end if
+    end if
+  end if
+end
+
+on updateAttributeBox me, data
+  member("agent_cmds_list").text = data
+end
+
+on addAction me, data
+  pActAgent.OBJ.addAction(data)
+  me.checkForObj()
+end
+
+on removeAction me, tLine
+end

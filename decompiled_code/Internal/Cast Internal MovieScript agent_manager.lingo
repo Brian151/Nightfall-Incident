@@ -1,0 +1,52 @@
+property pAgents
+global glob
+
+on new me
+  me.getAgentList()
+  return me
+end
+
+on getAgentList me
+  temp = cleanWhitespace(member("program_data").text)
+  pAgents = value(temp)
+end
+
+on passAgents me
+  return pAgents
+end
+
+on passList me
+  data = ""
+  i = 1
+  repeat while i <= pAgents.count
+    if i = pAgents.count then
+      data = data & pAgents.getAt(i).name
+    else
+      data = data & pAgents.getAt(i).name & RETURN
+    end if
+    i = 1 + i
+  end repeat
+  return data
+end
+
+on passAgentDesc me, aName
+  data = #error
+  i = 1
+  repeat while i <= pAgents.count
+    if aName = pAgents.getAt(i).name then
+      data = pAgents.getAt(i)
+    else
+      i = 1 + i
+    end if
+  end repeat
+  return data
+end
+
+on addProgram me, pos
+  data = pAgents.getAt(pos)
+  glob.map_manager.mapEdit(data)
+end
+
+on showProgramDesc me, pos
+  member("obj_description").text = pAgents.getAt(pos).description
+end

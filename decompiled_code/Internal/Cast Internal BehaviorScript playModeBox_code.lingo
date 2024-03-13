@@ -1,0 +1,5 @@
+global glob
+
+on exitFrame me
+  member("playModeBox").text = glob.game_manager.pTurn & "' Turn"
+end

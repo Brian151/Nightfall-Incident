@@ -1,0 +1,12 @@
+global glob
+
+on mouseUp me
+  glob.setAt(#mode, #edit)
+  SndSFX("snd_start")
+  glob.cmd_manager.loadData(1)
+  go("edit")
+end
+
+on mouseEnter me
+  SndSFX("snd_rollover")
+end

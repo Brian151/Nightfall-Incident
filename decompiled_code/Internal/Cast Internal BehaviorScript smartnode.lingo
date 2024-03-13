@@ -1,0 +1,66 @@
+property my, pH, pSpyBot, pBaseSp
+global glob
+
+on beginSprite me
+  glob.setAt(#smartnode, me)
+  my = sprite(me.spriteNum)
+  pActLine = 0
+  pH = sprite(me.spriteNum - 1).height
+  pBaseSp = me.spriteNum - 5
+end
+
+on mouseWithin me
+  ml = my.pointToLine(the mouseLoc)
+  if ml > 0 then
+    base = sprite(me.spriteNum - 4).loc + point(-98, -92)
+    myLoc = base + point(0, ml - 1 * pH)
+    sprite(me.spriteNum - 1).loc = myLoc
+    sprite(me.spriteNum - 1).blend = 50
+  end if
+end
+
+on mouseLeave me
+  sprite(me.spriteNum - 1).blend = 0
+end
+
+on mouseDown me
+  ml = my.pointToLine(the mouseLoc)
+  if ml > 0 and ml < 5 then
+    pSpyBot = ml
+    member("spybot_name_list").fontStyle = [#plain]
+  end if
+end
+
+on updateInfo me
+end
+
+on buyNewSpyBot me
+  if glob.credits >= 2000 then
+    glob.player_manager.getNewSpybot(pSpyBot)
+    me.hide()
+  else
+    beep()
+    nothing()
+  end if
+end
+
+on show me
+  i = 1
+  repeat while i <= 5
+    sprite(pBaseSp + i).locV = sprite(pBaseSp + i).locV - 400
+    sprite(pBaseSp + i).locH = sprite(pBaseSp + i).locH + 200
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on hide me
+  glob.setAt(#scrollMap, #YES)
+  i = 1
+  repeat while i <= 5
+    sprite(pBaseSp + i).locV = sprite(pBaseSp + i).locV + 400
+    sprite(pBaseSp + i).locH = sprite(pBaseSp + i).locH - 200
+    i = 1 + i
+  end repeat
+  updateStage()
+end

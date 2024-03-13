@@ -1,0 +1,119 @@
+property my, pSp, pType, pId, pMemName, pPos, pState, pMargin, pStats, pTargetPos
+global glob
+
+on new me, myType, myMemName, myPos, stats, cmd
+  if glob.count(#sprites) = 0 then
+    exit
+  end if
+  repeat while 1
+    pSp = glob.getProp(#sprites, 1)
+    glob.sprites.deleteAt(1)
+    if not doubleBooked(pSp, me) then
+    else
+    end if
+  end repeat
+  pType = myType
+  pMemName = myMemName
+  pPos = myPos
+  if glob.mode = #play then
+    pState = #hold
+  else
+    pState = #edit
+  end if
+  pStats = stats
+  if cmd = #open then
+    me.insertObj()
+  end if
+  my = sprite(pSp)
+  puppetSprite(pSp, 1)
+  my.member = member(pMemName)
+  my.loc = point(1000, 1000)
+  my.ink = 36
+  return me
+end
+
+on insertObj me
+  glob.map_manager.insertObj(pPos, me, pType, #head)
+end
+
+on drawSp me, part, pos
+  pMargin = [136, 2]
+  if pType = #item then
+    my.member = member("item_" & pMemName)
+    my.loc = point(pMargin.getAt(1), pMargin.getAt(2)) + point(pPos.getAt(1) - 1 * 32, pPos.getAt(2) - 1 * 32)
+    updateStage()
+  end if
+end
+
+on passData me
+  data = [:]
+  data.setAt(#type, pType)
+  data.setAt(#stats, pStats)
+  data.setAt(#mem, pMemName)
+  data.setAt(#pos, pPos)
+  glob.map_manager.removeObjRef(pPos)
+  return data
+end
+
+on terminate me, part, cmd
+  temp = sprite(pSp).loc + point(16, 16)
+  case cmd of
+    #DOCK:
+    #CREDIT:
+      glob.undoFlag = 0
+      sec = glob.getPropRef(#WorldData, glob.towerID).data.security
+      case sec of
+        1:
+          amt = random(11)
+          creditsAmount = 240 + amt * 10
+        2:
+          amt = random(16)
+          creditsAmount = 340 + amt * 10
+        3:
+          amt = random(21)
+          creditsAmount = 490 + amt * 10
+        4:
+          amt = random(21)
+          creditsAmount = 690 + amt * 10
+        otherwise:
+          creditsAmount = 200
+      end case
+      SndSFX("snd_credit")
+      glob.FXguy.doEffect(#CREDIT, temp, "cool_credit1", creditsAmount)
+      glob.creditsItem = glob.creditsItem + creditsAmount
+    #SPYBOT:
+    #flag:
+      glob.player_manager.gotWinFlag()
+      SndSFX("snd_win_flag")
+  end case
+  pos = glob.objs.getOne(me)
+  my.loc = point(1000, 1000)
+  puppetSprite(pSp, 0)
+  glob.sprites.add(pSp)
+  glob.objs.deleteAt(pos)
+end
+
+on idIs me, id
+  pId = id
+end
+
+on actionDone me
+end
+
+on upderAttack me, force
+end
+
+on changeState me, state
+  pState = state
+end
+
+on resetStats me
+  pState = #hold
+end
+
+on checkState me
+  return pState
+end
+
+on loopFrame me
+end

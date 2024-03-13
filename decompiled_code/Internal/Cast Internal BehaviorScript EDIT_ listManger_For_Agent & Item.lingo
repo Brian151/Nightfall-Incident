@@ -1,0 +1,53 @@
+property my, pLine, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#objList, me)
+  my = sprite(me.spriteNum)
+  me.updateField("")
+end
+
+on updateField me, data
+  my.member.text = data
+end
+
+on updateState me, num
+  case num of
+    1:
+      me.updateField("")
+    2:
+      me.updateField("")
+    3:
+      me.updateField(glob.item_manager.passList())
+    4:
+      me.updateField(glob.agent_manager.passList())
+  end case
+end
+
+on mouseUp me
+  if my.member.text = "" then
+    member("selected_obj_box").text = ""
+    member("obj_description").text = ""
+  else
+    pLine = the mouseLine
+    temp = my.member.text.getProp(#line, pLine)
+    member("selected_obj_box").text = temp
+    case glob.map_manager.pActLayer of
+      3:
+        glob.item_manager.showItemDesc(pLine)
+      4:
+        glob.agent_manager.showProgramDesc(pLine)
+    end case
+  end if
+end
+
+on addProgram me
+  if pLine > 0 then
+    case glob.map_manager.pActLayer of
+      3:
+        glob.item_manager.addItem(pLine)
+      4:
+        glob.agent_manager.addProgram(pLine)
+    end case
+  end if
+end

@@ -1,0 +1,3 @@
+on beginSprite me
+  member("preload_msg").text = ""
+end

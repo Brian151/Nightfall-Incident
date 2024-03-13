@@ -1,0 +1,12 @@
+property pActNode, pActNodeData
+global glob
+
+on new me
+  temp = cleanWhitespace(member("nodes_logic").text)
+  glob.setAt(#nodesLogic, value(temp))
+  put ilk(glob.getAt(#nodesLogic))
+  return me
+end
+
+on passData me, nodeNum
+end

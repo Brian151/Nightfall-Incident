@@ -1,0 +1,21 @@
+property my
+global glob
+
+on beginSprite me
+  glob.setAt(#battleSpyBot, me)
+  my = sprite(me.spriteNum)
+end
+
+on show me
+  x = 1
+  repeat while x <= 14
+    i = 0
+    repeat while i <= 2
+      sprite(me.spriteNum + i).locH = sprite(me.spriteNum + i).locH + 10
+      updateStage()
+      delayTime(10)
+      i = 1 + i
+    end repeat
+    x = 1 + x
+  end repeat
+end

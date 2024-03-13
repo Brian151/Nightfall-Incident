@@ -1,0 +1,25 @@
+property my, pPos, pSize, pLoc, pOldLoc
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pLoc = my.loc
+  my.loc = glob.mapFlrManager.my.loc + pLoc
+  updateStage()
+  my.locZ = 1000 + my.locV
+end
+
+on exitFrame me
+end
+
+on mouseDown me
+  jumpLoc = my.loc - point(325, 210)
+  glob.mapFlrManager.mouseDown(jumpLoc)
+end
+
+on followMap me, shift
+end
+
+on scrollMap me, slide
+  my.loc = my.loc + slide
+end

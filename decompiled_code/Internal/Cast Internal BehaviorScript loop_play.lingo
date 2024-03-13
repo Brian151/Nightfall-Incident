@@ -1,0 +1,39 @@
+property flag
+global glob
+
+on beginSprite me
+  glob.setAt(#game_manager, new(script("game_manager")))
+  glob.file_manager.playMap()
+  glob.setAt(#undoFlag, 1)
+  glob.setAt(#gotWinFlag, 0)
+  glob.setAt(#selectNextPlayer, 0)
+  glob.setAt(#creditsItem, 0)
+  glob.setAt(#spybotCmdUsed, 0)
+  glob.player_manager.resetList()
+end
+
+on enterFrame me
+  SndCheckPlaylist()
+end
+
+on exitFrame me
+  if voidp(flag) then
+    glob.game_manager.assignAgentId()
+    flag = 1
+  end if
+  i = 1
+  repeat while i <= glob.count(#objs)
+    glob.getPropRef(#objs, i).loopFrame()
+    i = 1 + i
+  end repeat
+  if glob.getAt(#switchFlag) and glob.game_manager.pTurn = #player then
+    put "Player is finished!!!, Now computer turn"
+    glob.setAt(#switchFlag, 0)
+    glob.playerFlag = 1
+    glob.game_manager.switchTurn()
+  end if
+  if glob.selectNextPlayer then
+    glob.game_manager.selectNext()
+  end if
+  go(the frame)
+end

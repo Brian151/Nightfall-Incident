@@ -1,0 +1,193 @@
+property pData, pBox, pPos
+global glob
+
+on beginSprite me
+  glob.setAt(#cmdInput, me)
+  pBox = member("cmd_attributes")
+  pBox.text = ""
+end
+
+on createNewCmd me
+  temp = cleanWhitespace(member("cmd_default").text)
+  pData = value(temp)
+  me.updateText()
+  pPos = 0
+end
+
+on openCmdToEdit me, data, pos
+  pData = data
+  pPos = pos
+  me.updateText()
+end
+
+on SaveData me
+  temp = cleanWhitespace(member("cmd_attributes").text)
+  pData = value(temp)
+  glob.cmd_manager.SaveData(pData, pPos)
+end
+
+on updateText me
+  temp = member("cmd__template").text
+  i = 1
+  repeat while i <= temp.count(#word)
+    theWord = temp.getProp(#word, i)
+    case theWord of
+      "@type":
+        pre = me.returnPre(pData.getAt(#type))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@name":
+        pre = me.returnPre(pData.getAt(#name))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@nameText":
+        pre = me.returnPre(pData.getAt(#NAMETEXT))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@requiredSize":
+        pre = me.returnPre(pData.getAt(#requiredSize))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@cost":
+        pre = me.returnPre(pData.getAt(#cost))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@range":
+        pre = me.returnPre(pData.getAt(#range))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@areaOfEffect":
+        pre = me.returnPre(pData.getAt(#areaOfEffect))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@targetLimit":
+        pre = me.returnPre(pData.getAt(#targetLimit))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@numOfUse":
+        pre = me.returnPre(pData.getAt(#numOfUse))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@global":
+        pre = me.returnPre(pData.getAt(#global))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@damage":
+        pre = me.returnPre(pData.getAt(#damage))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@grow":
+        pre = me.returnPre(pData.getAt(#grow))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@speedMod":
+        pre = me.returnPre(pData.getAt(#speedMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@sizeMod":
+        pre = me.returnPre(pData.getAt(#sizeMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@damageMod":
+        pre = me.returnPre(pData.getAt(#damageMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@shieldMod":
+        pre = me.returnPre(pData.getAt(#shieldMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@virusMod":
+        pre = me.returnPre(pData.getAt(#virusMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@stealthMod":
+        pre = me.returnPre(pData.getAt(#stealthMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@scrambleMod":
+        pre = me.returnPre(pData.getAt(#scrambleMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@freezeMod":
+        pre = me.returnPre(pData.getAt(#freezeMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@convertMod":
+        pre = me.returnPre(pData.getAt(#convertMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@clearMod":
+        pre = me.returnPre(pData.getAt(#clearMod))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@reboot":
+        pre = me.returnPre(pData.getAt(#reboot))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@clone":
+        pre = me.returnPre(pData.getAt(#clone))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@duplicate":
+        pre = me.returnPre(pData.getAt(#duplicate))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@emulate":
+        pre = me.returnPre(pData.getAt(#emulate))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@defreg":
+        pre = me.returnPre(pData.getAt(#defreg))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@frag":
+        pre = me.returnPre(pData.getAt(#frag))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+      "@description":
+        pre = me.returnPre(pData.getAt(#description))
+        -- unk6D 5
+        -- unk21
+        ERROR.setContents(ERROR)
+    end case
+    i = 1 + i
+  end repeat
+  pBox.text = temp
+end
+
+on returnPre me, data
+  if ilk(data) = #symbol then
+    pre = "#"
+  else
+    pre = ""
+  end if
+  return pre
+end

@@ -1,0 +1,55 @@
+property my, pActLine, pText
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pActLine = 0
+  pText = ""
+  member("playerOwnedList").fontStyle = [#plain]
+end
+
+on mouseDown me
+  SndSFX("snd_info")
+  ml = my.pointToLine(the mouseLoc)
+  glob.player_manager.agentPick(ml)
+  temp = glob.player_manager.pActAgent
+  if voidp(temp) then
+    exit
+  end if
+  if temp = 0 then
+  else
+    if voidp(glob.map_manager.pMapClickPos) then
+    else
+      agent = glob.map_manager.agentExist(glob.map_manager.pMapClickPos)
+      if agent = 0 then
+      else
+        if agent.OBJ.pType = #item then
+          if agent.OBJ.pStats.type = #DOCK then
+            glob.tutorialPointer.hide()
+            glob.player_manager.uploadProgram()
+          end if
+        else
+          if agent.OBJ.pTeam = #com then
+          else
+            glob.player_manager.uploadProgram()
+          end if
+        end if
+      end if
+    end if
+  end if
+end
+
+on exitFrame me
+  if my.locZ < 200000 then
+    my.locZ = 200000
+  end if
+  temp = glob.player_manager.pActAgent
+  if temp > 0 and not temp = pActLine then
+    pActLine = temp
+    member("playerOwnedList").fontStyle = [#plain]
+  else
+    if temp = 0 then
+      member("playerOwnedList").fontStyle = [#plain]
+    end if
+  end if
+end

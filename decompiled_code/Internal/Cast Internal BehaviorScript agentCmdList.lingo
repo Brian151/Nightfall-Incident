@@ -1,0 +1,11 @@
+property pList, pBox, pLine
+global glob
+
+on beginSprite me
+  glob.setAt(#agentCmdList, me)
+  pBox = member("agent_cmds_list")
+end
+
+on mouseDown me
+  pLine = the mouseLine
+end

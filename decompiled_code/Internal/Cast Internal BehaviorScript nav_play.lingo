@@ -1,0 +1,12 @@
+global glob
+
+on mouseUp me
+  if voidp(glob.map_manager.pActMapData) then
+    exit
+  end if
+  if glob.map_manager.count(#pActMapData) = 0 then
+    exit
+  end if
+  glob.mode = #play
+  go("play")
+end

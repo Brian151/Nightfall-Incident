@@ -1,0 +1,98 @@
+property my, my2, sp, pH, pV, pHm, pVm, pWeight, pState, pArrows, pOnArrow, pReturnMapLocFlag
+global glob
+
+on beginSprite me
+  glob.setAt(#mapFlrManager, me)
+  my = sprite(me.spriteNum)
+  my2 = sprite(me.spriteNum + 1)
+  sp = me.spriteNum
+  my.rect = member("iso_floor").rect
+  pState = #on
+  pArrows = []
+  temp = glob.worldMap_manager.askLoc()
+  pH = 0
+  pV = 0
+  my.loc = point(pH, pV)
+  pReturnMapLocFlag = 0
+end
+
+on enterFrame me
+  if voidp(glob.getAt(#towerID)) then
+    pReturnMapLocFlag = 1
+    exit
+  end if
+  if not pReturnMapLocFlag then
+    pReturnMapLocFlag = 1
+    tower = glob.towerID
+    case glob.towerID of
+      43:
+        tower = 3
+      44:
+        tower = 2
+      45:
+        tower = 12
+      46:
+        tower = 19
+      47:
+        tower = 29
+      48:
+        tower = 40
+    end case
+    sprite(800 + tower).vMouseDown(#bipass)
+    glob.scrollMap = #YES
+  end if
+end
+
+on getArrowNum me, num
+  if pArrows.getOne(num) = 0 then
+    pArrows.add(num)
+  end if
+end
+
+on mouseDown me, clicked, cmd
+  if glob.getAt(#thinking) then
+    exit
+  end if
+  if glob.getAt(#scrollMap) = #NO and voidp(cmd) then
+    exit
+  end if
+  if voidp(glob.getAt(#towerID)) then
+    exit
+  end if
+  if voidp(clicked) then
+    click = -the clickLoc - point(100, 150)
+  else
+    click = -clicked - point(55, 55)
+  end if
+  click = my.loc + click
+  Angle = GetAngle(click - my.loc)
+  dist = Distance(click, my.loc)
+  lup = dist / 40
+  vX = GetVx(Angle, 40)
+  vY = GetVy(Angle, 40)
+  hold = 4
+  i = 1
+  repeat while i <= lup
+    my.loc = my.loc + point(vX, vY)
+    sendAllSprites(#scrollMap, point(vX, vY), me)
+    updateStage()
+    if i < 4 then
+      hold = hold - 1
+    end if
+    if i > lup - 4 then
+      hold = hold + 1
+    end if
+    i = 1 + i
+  end repeat
+  pH = my.locH
+  pV = my.locV
+  glob.setAt(#scrollMap, #NO)
+  return 1
+end
+
+on scrollMap me, slide, OBJ
+  if me = OBJ then
+    exit
+  end if
+  my.loc = my.loc + slide
+end

@@ -1,0 +1,21 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.blend = 0
+end
+
+on mouseUp me
+  if my.blend = 0 then
+    pass()
+  else
+    glob.game_manager.switchTurn()
+  end if
+end
+
+on exitFrame me
+  if glob.game_manager.pState = #BATTLE and my.blend = 0 then
+    my.blend = 70
+  end if
+end

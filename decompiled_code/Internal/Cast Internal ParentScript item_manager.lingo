@@ -1,0 +1,61 @@
+property pItems, pLine
+global glob
+
+on new me
+  me.loadData()
+  return me
+end
+
+on loadData me
+  pItems = []
+  temp = cleanWhitespace(member("item_data").text)
+  pItems = value(temp)
+end
+
+on selectItem me, lineNum
+  if lineNum > pItems.count or lineNum < 0 then
+    exit
+  end if
+  pLine = lineNum
+  member("cmd_name").text = pItems.getAt(lineNum).name
+end
+
+on passItemDesc me, aName
+  data = #error
+  i = 1
+  repeat while i <= pItems.count
+    if aName = pItems.getAt(i).name then
+      data = pItems.getAt(i)
+    else
+      i = 1 + i
+    end if
+  end repeat
+  return data
+end
+
+on passData me
+  return pItems
+end
+
+on passList me
+  data = ""
+  i = 1
+  repeat while i <= pItems.count
+    if i = pItems.count then
+      data = data & pItems.getAt(i).name
+    else
+      data = data & pItems.getAt(i).name & RETURN
+    end if
+    i = 1 + i
+  end repeat
+  return data
+end
+
+on showItemDesc me, pos
+  member("obj_description").text = pItems.getAt(pos).description
+end
+
+on addItem me, pos
+  data = pItems.getAt(pos)
+  glob.map_manager.mapEdit(data)
+end

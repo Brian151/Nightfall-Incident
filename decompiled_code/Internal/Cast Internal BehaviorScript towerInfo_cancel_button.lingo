@@ -1,0 +1,15 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+end
+
+on mouseDown me
+  glob.towerInfoBox.hide()
+  glob.setAt(#scrollMap, #YES)
+  glob.towerID = VOID
+  sendAllSprites(#selectCheckOff)
+  glob.worldMap_manager.reportActTower(0)
+  sendAllSprites(#resetTowerImg)
+end

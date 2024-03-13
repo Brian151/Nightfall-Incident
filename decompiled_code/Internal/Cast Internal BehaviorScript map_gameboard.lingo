@@ -1,0 +1,204 @@
+property my, pClicked, pActAgent, pActAgentState, pUndoAgent
+global glob
+
+on beginSprite me
+  glob.setAt(#mapBoardObj, me)
+  my = sprite(me.spriteNum)
+  if voidp(glob.map_manager.pActMapData) then
+    my.loc = point(1000, 1000)
+  end if
+  pOldClick = [0, 0]
+end
+
+on updateLoc me, x, y
+  my.loc = point(x, y)
+end
+
+on undoBySpyBot me
+  agent = pActAgent.OBJ
+  if agent = 0 then
+    exit
+  end if
+  if objectp(agent) and not voidp(pActAgent) and not pActAgent = 0 then
+    if glob.undoFlag then
+      me.undoMove(pClicked)
+    else
+      if not glob.undoFlag then
+        glob.mapBoardObj.actionDone()
+      end if
+    end if
+  end if
+end
+
+on mouseDown me, clicked
+  if glob.getAt(#thinking) then
+    exit
+  end if
+  if glob.mode = #play and glob.game_manager.pState = #pause then
+    exit
+  end if
+  if glob.game_manager.pState = #BattleOver then
+    exit
+  end if
+  if glob.game_manager.pTurn = #com then
+    glob.setAt(#playerFlag, 0)
+    exit
+  else
+    glob.setAt(#playerFlag, 1)
+  end if
+  if not voidp(pActAgent) and not pActAgent = 0 then
+    if pActAgent.OBJ.pState = #actionLocked then
+      exit
+    end if
+  end if
+  if voidp(clicked) then
+    clicked = the clickLoc
+  end if
+  clickPos = glob.map_manager.mapClickPos(clicked.getAt(1), clicked.getAt(2))
+  agent = glob.map_manager.agentExist(clickPos)
+  if agent = 0 then
+    exit
+  end if
+  if objectp(agent) and not voidp(pActAgent) and not pActAgent = 0 then
+    if not agent.OBJ = pActAgent.OBJ and glob.undoFlag then
+      if pActAgent.OBJ.pType = #agent then
+        if not pActAgent.OBJ.pStats.Movement = pActAgent.OBJ.pStats.MoveCount then
+          glob.mapBoardObj.moveDone()
+          glob.mapBoardObj.actionDone()
+        else
+          me.undoMove(clicked)
+        end if
+      end if
+    else
+      if not agent.OBJ = pActAgent.OBJ and not glob.undoFlag then
+        glob.mapBoardObj.actionDone()
+      else
+        me.vMouseDown(clicked)
+      end if
+    end if
+  else
+  end if
+  glob.map_manager.mapClick(clicked.getAt(1), clicked.getAt(2))
+  me.vMouseDown(clicked)
+end
+
+on vMouseDown me, clicked
+  if voidp(clicked) then
+    pClicked = the clickLoc
+  else
+    pClicked = clicked
+  end if
+  clickPos = glob.map_manager.mapClickPos(pClicked.getAt(1), pClicked.getAt(2))
+  agent = glob.map_manager.agentExist(clickPos)
+  glob.tileHiBox.visToggle(1)
+  if agent = 0 then
+    if pActAgent = 0 then
+      pActAgentState = #hold
+      glob.tileHiBox.visToggle(0)
+      exit
+    end if
+    if objectp(pActAgent.getAt(#OBJ)) then
+      exit
+    end if
+    if not pActAgent = 0 then
+      me.resetOldAgent()
+    end if
+    pActAgent = 0
+    pActAgentState = #hold
+    glob.tileHiBox.visToggle(0)
+  else
+    if agent.part = #body then
+      if not pActAgent = 0 then
+        me.resetOldAgent()
+      end if
+      pActAgent = 0
+      pActAgentState = #hold
+    else
+      if pActAgent = agent then
+        if not pActAgent = 0 then
+          me.resetOldAgent()
+        end if
+        pActAgent = 0
+        pActAgentState = #hold
+      else
+        if not pActAgent = 0 then
+          me.resetOldAgent()
+        end if
+        glob.infoManager.spyBotCmd(#off)
+        pActAgent = agent
+        pActAgentState = #move
+        tObj = pActAgent.OBJ
+        if tObj.pType = #agent and tObj.getProp(#pStats, #Movement) = tObj.getProp(#pStats, #MoveCount) then
+          SndSFX("snd_select")
+          tPos = duplicate(pActAgent.OBJ.pPos)
+          tBody = duplicate(pActAgent.OBJ.pBody)
+          pUndoAgent = [#pos: tPos, #body: tBody, #click: clicked]
+        end if
+        pActAgent.OBJ.changeState(pActAgentState)
+        glob.player_manager.pActAgent = 0
+      end if
+    end if
+  end if
+  glob.map_manager.mapClick(clicked.getAt(1), clicked.getAt(2))
+  glob.map_manager.vMapClick(clickPos)
+end
+
+on turnEndReset me
+  if not voidp(pActAgent) and not pActAgent = 0 then
+    pActAgent.OBJ.actionDone()
+  end if
+end
+
+on cleatActAgent me
+  pActAgent = 0
+end
+
+on resetOldAgent me
+  pActAgent.OBJ.resetStats()
+end
+
+on moveDone me
+  if pActAgent = 0 or voidp(pActAgent) then
+    exit
+  end if
+  pActAgent.OBJ.moveDone(pClicked)
+end
+
+on actionDone me
+  if pActAgent = 0 or voidp(pActAgent) then
+    exit
+  end if
+  if pActAgent.OBJ.pTeam = glob.game_manager.pTurn then
+    pActAgent.OBJ.actionDone()
+  end if
+end
+
+on undoMove me, clicked
+  if voidp(pUndoAgent) then
+    exit
+  end if
+  if pActAgent = 0 then
+    exit
+  end if
+  if pActAgent.OBJ.pType = #item then
+    exit
+  end if
+  pActAgent.OBJ.undoMove(pUndoAgent, clicked)
+  glob.map_manager.drawMap()
+end
+
+on keyShortCut me, whatKey
+  if pActAgent = 0 then
+    exit
+  end if
+  if glob.game_manager.pTurn = #player then
+    case whatKey of
+      "d":
+        if pActAgent.OBJ.pTeam = #player then
+          me.actionDone()
+        end if
+      "1":
+      "2":
+    end case
+  end if
+end

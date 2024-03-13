@@ -1,0 +1,190 @@
+property pAgents, pAgentsStr, pAgentsCost, pShowRange, pArrows, pActAgent, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#warez, me)
+  data = glob.agent_manager.passAgents()
+  pAgents = duplicate(data)
+  pShowRange = [1, 13]
+  pArrows = []
+  pActAgent = 0
+  pState = #hide
+  me.updateList()
+  me.updateScreen()
+end
+
+on exitFrame me
+  if pState = #show and glob.scrollMap = #YES then
+    glob.scrollMap = #NO
+  end if
+end
+
+on reportShowState me
+  if pState = #hide then
+    return 0
+  else
+    return 1
+  end if
+end
+
+on passAgentDesc me, aName
+  data = #error
+  i = 1
+  repeat while i <= pAgents.count
+    if aName = pAgents.getAt(i).name then
+      data = pAgents.getAt(i)
+    else
+      i = 1 + i
+    end if
+  end repeat
+  return data
+end
+
+on transactionBuy me
+  if pActAgent > 0 then
+    if glob.credits >= pAgents.getAt(pActAgent).cost then
+      glob.credits = glob.credits - pAgents.getAt(pActAgent).cost
+      glob.player_manager.buyNewAgent(pAgents.getAt(pActAgent).name)
+      glob.programAcquiredBox.show(pAgents.getAt(pActAgent).NAMETEXT)
+    else
+      alert(" Sorry, you don't have enough credits")
+    end if
+  else
+  end if
+end
+
+on updateInventory me
+  case glob.towerID of
+    2:
+      data = glob.getProp(#wareInventory, 1)
+    12:
+      data = glob.getProp(#wareInventory, 2)
+    19:
+      data = glob.getProp(#wareInventory, 3)
+    29:
+      data = glob.getProp(#wareInventory, 4)
+    otherwise:
+      put "WAREZ NODE ERROR"
+  end case
+  temp = []
+  i = 1
+  repeat while i <= data.count(#Programs)
+    agentName = data.getProp(#Programs, i)
+    agentData = glob.agent_manager.passAgentDesc(agentName)
+    if agentData = #error then
+    else
+      temp.add(agentData)
+    end if
+    i = 1 + i
+  end repeat
+  pAgents = temp
+  me.updateList()
+  me.updateScreen()
+end
+
+on updateList me
+  pAgentsStr = ""
+  pAgentsCost = ""
+  i = pShowRange.getAt(1)
+  repeat while i <= pShowRange.getAt(2)
+    if i > pAgents.count then
+      exit
+    end if
+    pAgentsStr = pAgentsStr & pAgents.getAt(i).NAMETEXT & RETURN
+    pAgentsCost = pAgentsCost & pAgents.getAt(i).cost & RETURN
+    i = 1 + i
+  end repeat
+end
+
+on updateScreen me
+  member("warez_name_list").text = pAgentsStr
+  member("warez_cost_list").text = pAgentsCost
+end
+
+on agentPick me, ml
+  if ml < 1 then
+    exit
+  end if
+  xl = pShowRange.getAt(1) + ml - 1
+  if xl > pAgents.count then
+    exit
+  end if
+  if xl <= pAgents.count then
+    if pActAgent <> xl then
+      pActAgent = xl
+      glob.warezInfoManager.activeAgent(pAgents.getAt(pActAgent))
+    else
+      pActAgent = 0
+      glob.warezInfoManager.activeAgent(0)
+    end if
+  end if
+  return pActAgent
+end
+
+on reportArrow me, sp
+  pArrows.add(sp)
+end
+
+on arrowClicked me, sp
+  pos = pArrows.getOne(sp)
+  if pos = 1 then
+    if pShowRange.getAt(1) > 1 then
+      pShowRange.setAt(1, pShowRange.getAt(1) - 1)
+      pShowRange.setAt(2, pShowRange.getAt(2) - 1)
+    end if
+  else
+    if pShowRange.getAt(2) < pAgents.count then
+      pShowRange.setAt(1, pShowRange.getAt(1) + 1)
+      pShowRange.setAt(2, pShowRange.getAt(2) + 1)
+    end if
+  end if
+  me.updateList()
+  me.updateScreen()
+  me.updateArrows()
+  updateStage()
+end
+
+on updateArrows me
+  if pShowRange.getAt(1) = 1 then
+    sprite(pArrows.getAt(1)).blend = 0
+  else
+    sprite(pArrows.getAt(1)).blend = 30
+  end if
+  if pShowRange.getAt(2) >= pAgents.count then
+    sprite(pArrows.getAt(2)).blend = 0
+  else
+    sprite(pArrows.getAt(2)).blend = 30
+  end if
+end
+
+on show me
+  if pState = #show then
+    exit
+  end if
+  glob.scrollMap = #NO
+  pState = #show
+  base = me.spriteNum - 1
+  i = 1
+  repeat while i <= 8
+    sprite(base + i).locV = sprite(base + i).locV + 400
+    i = 1 + i
+  end repeat
+  updateStage()
+  glob.warezInfoManager.show()
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  glob.scrollMap = #YES
+  pState = #hide
+  base = me.spriteNum - 1
+  i = 1
+  repeat while i <= 8
+    sprite(base + i).locV = sprite(base + i).locV - 400
+    i = 1 + i
+  end repeat
+  updateStage()
+  glob.warezInfoManager.hide()
+end

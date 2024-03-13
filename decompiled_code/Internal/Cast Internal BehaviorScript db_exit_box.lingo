@@ -1,0 +1,55 @@
+property my, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#dbExitBox, me)
+  my = sprite(me.spriteNum)
+  pState = #hide
+end
+
+on show me
+  if pState = #show then
+    exit
+  end if
+  pState = #show
+  glob.setAt(#old_gamestate, glob.game_manager.pState)
+  glob.game_manager.pState = #pause
+  base = me.spriteNum - 1
+  i = 1
+  repeat while i <= 3
+    sprite(base + i).locV = sprite(base + i).locV + 250
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  glob.game_manager.pState = glob.getAt(#old_gamestate)
+  base = me.spriteNum - 1
+  i = 1
+  repeat while i <= 3
+    sprite(base + i).locV = sprite(base + i).locV - 250
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on clicked me, snum
+  temp = snum - me.spriteNum
+  case temp of
+    2:
+      me.hide()
+    1:
+      glob.mode = #map
+      spBank()
+      SndStop()
+      if the frameLabel = "play" then
+        glob.worldMap_manager.battleResult(#lost)
+      end if
+      go("map")
+  end case
+end

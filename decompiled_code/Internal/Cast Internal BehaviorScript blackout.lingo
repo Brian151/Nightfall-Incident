@@ -1,0 +1,71 @@
+property my, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#blackout, me)
+  my = sprite(me.spriteNum)
+  if glob.getAt(#blackoutFlag) then
+    me.shortShow()
+  else
+    me.hide()
+  end if
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  i = 1
+  repeat while i <= 5
+    my.blend = 0
+    updateStage()
+    delayTime(10)
+    my.blend = 60
+    updateStage()
+    delayTime(10)
+    i = 1 + i
+  end repeat
+  my.loc = point(1000, 1000)
+end
+
+on show me
+  if pState = #show then
+    exit
+  end if
+  glob.setAt(#blackoutFlag, 1)
+  pState = #show
+  my.loc = point(0, 0)
+  updateStage()
+  i = 1
+  repeat while i <= 5
+    my.blend = 0
+    updateStage()
+    delayTime(10)
+    my.blend = 60
+    updateStage()
+    delayTime(10)
+    i = 1 + i
+  end repeat
+  glob.scrollMap = #YES
+end
+
+on shortShow me
+  if pState = #show then
+    exit
+  end if
+  glob.setAt(#blackoutFlag, 1)
+  pState = #show
+  my.loc = point(0, 0)
+  my.blend = 60
+  updateStage()
+  glob.scrollMap = #YES
+end
+
+on mouseUp me
+  nothing()
+end
+
+on mouseDown me
+  nothing()
+end

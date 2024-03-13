@@ -1,0 +1,6 @@
+global glob
+
+on mouseUp me
+  team = symbol(sprite(me.spriteNum).member.text)
+  glob.tileHiBox.changeTeam(team)
+end

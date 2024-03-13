@@ -1,0 +1,5 @@
+global glob
+
+on mouseUp me
+  glob.file_manager.loadLevel()
+end

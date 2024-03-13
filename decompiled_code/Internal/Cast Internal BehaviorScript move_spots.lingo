@@ -1,0 +1,18 @@
+property my
+global glob
+
+on beginSprite me
+  glob.setAt(#moveSpots, me)
+  my = sprite(me.spriteNum)
+  my.visible = 0
+end
+
+on show me, newloc
+  my.visible = 1
+  my.loc = newloc
+end
+
+on hide me
+  my.visible = 0
+  my.loc = point(1000, 1000)
+end

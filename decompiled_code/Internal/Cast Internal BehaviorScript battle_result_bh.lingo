@@ -1,0 +1,81 @@
+property my, pSp, pTower, pResult, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#battleResultPanel, me)
+  pSp = me.spriteNum
+  my = sprite(pSp)
+  pState = #hide
+  glob.worldMap_manager.battleResultDisplay()
+end
+
+on exitFrame me
+  if pState = #show then
+    glob.setAt(#scrollMap, #NO)
+  end if
+end
+
+on reportShowState me
+  if pState = #hide then
+    return 0
+  else
+    return 1
+  end if
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  my.locH = my.locH + 500
+  sp = 1
+  repeat while sp <= 6
+    sprite(pSp + sp).locH = sprite(pSp + sp).locH + 500
+    sp = 1 + sp
+  end repeat
+  updateStage()
+end
+
+on show me, sp, bResult
+  if pState = #show then
+    exit
+  end if
+  if glob.blackoutFlag = 1 then
+    glob.blackoutFlag = 0
+  end if
+  pState = #show
+  glob.setAt(#scrollMap, #NO)
+  pResult = bResult
+  pTower = sp
+  my.locH = my.locH - 500
+  sp = 1
+  repeat while sp <= 6
+    sprite(pSp + sp).locH = sprite(pSp + sp).locH - 500
+    sp = 1 + sp
+  end repeat
+  updateStage()
+  coNum = glob.getPropRef(#WorldData, glob.towerID).company
+  sprite(pSp + 1).member = member("company_banner_" & coNum)
+  member("towerInfoBox_name").text = glob.getProp(#towerInfoz, 3)
+  member("towerInfoBox_slvl").text = "Security Level: " & glob.getPropRef(#towerInfoz, 4).security
+  if bResult = #won then
+    sprite(pSp + 5).member = member("node.info.mission.successful")
+    sprite(pSp + 6).member = member("but_netmap_result_win")
+    member("towerInfoBox_desc").text = member("Mission_successful_msg").text
+    if not glob.getAt(#towerState) = #WIN then
+      crdt = glob.getPropRef(#WorldData, glob.towerID).data.reward
+      put "==> Won credits:" & crdt
+      if glob.towerID = 40 or glob.towerID = 48 then
+        SndSFX("snd_final_win")
+      end if
+    else
+      put "==> Won This Battle Already, No Credits:"
+    end if
+  else
+    sprite(pSp + 5).member = member("node.info.mission.failed")
+    sprite(pSp + 6).member = member("but_netmap_result_lose")
+    member("battle_result_desc").text = member("lose_databattle_text").text
+  end if
+  updateStage()
+end

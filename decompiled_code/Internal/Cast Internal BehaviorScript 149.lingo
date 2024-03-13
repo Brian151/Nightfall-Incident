@@ -1,0 +1,29 @@
+property pMemName, pSprite
+
+on beginSprite me
+  pMemName = sprite(me.spriteNum).member.name
+  pSprite = sprite(me.spriteNum)
+end
+
+on mouseEnter me
+  SndSFX("snd_rollover")
+  pSprite.member = member(pMemName & "_up")
+  updateStage()
+end
+
+on mouseLeave me
+  pSprite.member = member(pMemName)
+  updateStage()
+end
+
+on mouseUp me
+  pSprite.member = member(pMemName)
+  updateStage()
+  pass()
+end
+
+on mouseDown me
+  SndSFX("snd_im_button")
+  pSprite.member = member(pMemName & "_down")
+  pass()
+end

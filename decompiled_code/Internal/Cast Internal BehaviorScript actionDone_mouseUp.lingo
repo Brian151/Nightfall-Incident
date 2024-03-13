@@ -1,0 +1,23 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.visible = 0
+end
+
+on mouseUp me
+  if my.visible = 0 then
+    pass()
+  else
+    glob.mapBoardObj.actionDone()
+  end if
+end
+
+on exitFrame me
+  if glob.game_manager.pState = #BATTLE and glob.infoManager.pSpyBotCmd = #off then
+    my.visible = 1
+  else
+    my.visible = 0
+  end if
+end

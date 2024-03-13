@@ -1,0 +1,159 @@
+property my, pActAgent, pActionPos, pFlag, pSpyBotCmd, pShowFlag, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#infoManager, me)
+  pActAgent = 0
+  pActionPos = 1
+  pSpyBotCmd = #off
+  pShowFlag = 0
+  my = sprite(me.spriteNum)
+  my.member.text = ""
+  pState = #hide
+  me.hideObjInfo()
+end
+
+on exitFrame me
+  if not pActAgent = 0 and pShowFlag = 0 then
+    me.showObjInfo(pActAgent, #list)
+    pShowFlag = 1
+  else
+    if pActAgent = 0 then
+      me.hideObjInfo()
+    end if
+  end if
+end
+
+on activeAgent me, who
+  pActAgent = who
+  pShowFlag = 0
+end
+
+on hideObjInfo me
+  member("objInfoName").text = ""
+  member("objInfoBoxX").text = ""
+  member("objActions").text = ""
+  member("objInfoCmdLabel").text = ""
+  member("actionDesc").text = ""
+  sprite(me.spriteNum + 1).blend = 0
+end
+
+on showObjInfo me, data, cmd
+  if voidp(cmd) then
+    if pActAgent.pType = #item then
+      member("objInfoCmdLabel").text = ""
+      itemData = glob.item_manager.passItemDesc(data.name)
+      member("objInfoName").text = itemData.NAMETEXT
+      member("objInfoBoxX").text = ""
+      member("objInfoBoxX").fontStyle = [#plain]
+      member("objActions").text = ""
+      sprite(me.spriteNum + 1).blend = 100
+      sprite(me.spriteNum + 1).member = member("item_" & pActAgent.pMemName)
+      member("actionDesc").text = itemData.description
+    else
+      member("objInfoCmdLabel").text = "COMMANDS"
+      agentData = glob.agent_manager.passAgentDesc(data.name)
+      member("objInfoName").text = agentData.NAMETEXT
+      if data.Movement = 10 then
+        maxSign = "(Max)"
+      else
+        maxSign = ""
+      end if
+      member("objInfoBoxX").text = "Move:" & data.Movement & maxSign & RETURN & "Max Size:" & data.maxSize & RETURN & "Current Size:" & pActAgent.count(#pBody) + 1
+      member("objInfoBoxX").fontStyle = [#plain]
+      temp = ""
+      i = 1
+      repeat while i <= data.count(#Actions)
+        tName = data.getProp(#Actions, i)
+        tInfo = glob.cmd_manager.actionDesc(tName)
+        if tInfo.requiredSize > 0 then
+          req = " (" & tInfo.requiredSize & ")"
+        else
+          req = ""
+        end if
+        if i = data.count(#Actions) then
+          temp = temp & tInfo.NAMETEXT & req
+        else
+          temp = temp & tInfo.NAMETEXT & req & RETURN
+        end if
+        i = 1 + i
+      end repeat
+      member("objActions").text = temp
+      member("moveCount").text = string(data.MoveCount)
+      member("actionDesc").text = data.description
+      sprite(me.spriteNum + 1).blend = 100
+      sprite(me.spriteNum + 1).member = member(pActAgent.pTeam & "_" & pActAgent.pMemName)
+    end if
+  else
+    member("objInfoCmdLabel").text = "COMMANDS"
+    agentData = glob.agent_manager.passAgentDesc(data.name)
+    member("objInfoName").text = agentData.NAMETEXT
+    if data.Movement = 10 then
+      maxSign = "(Max)"
+    else
+      maxSign = ""
+    end if
+    member("objInfoBoxX").text = "Move:" & data.Movement & maxSign & RETURN & "Max Size:" & data.maxSize
+    member("objInfoBoxX").fontStyle = [#plain]
+    temp = ""
+    i = 1
+    repeat while i <= data.count(#Actions)
+      tName = data.getProp(#Actions, i)
+      tInfo = glob.cmd_manager.actionDesc(tName)
+      if tInfo.requiredSize > 0 then
+        req = " (" & tInfo.requiredSize & ")"
+      else
+        req = ""
+      end if
+      if i = data.count(#Actions) then
+        temp = temp & tInfo.NAMETEXT & req
+      else
+        temp = temp & tInfo.NAMETEXT & req & RETURN
+      end if
+      i = 1 + i
+    end repeat
+    member("objActions").text = temp
+    member("moveCount").text = string(data.MoveCount)
+    member("actionDesc").text = data.description
+    sprite(me.spriteNum + 1).blend = 100
+    sprite(me.spriteNum + 1).member = member("player_" & pActAgent.icon)
+  end if
+end
+
+on actionSelected me, tLine
+  if voidp(pActAgent) or pActAgent = 0 or tLine < 1 then
+    exit
+  end if
+  pActionPos = tLine
+  actName = pActAgent.getProp(#Actions, tLine)
+  data = glob.cmd_manager.actionDesc(actName)
+  member("actionDesc").text = data.NAMETEXT & RETURN & data.description
+end
+
+on show me
+  if pState = #show then
+    exit
+  end if
+  pState = #show
+  base = me.spriteNum - 2
+  i = 0
+  repeat while i <= 11
+    sprite(base + i).locH = sprite(base + i).locH + 150
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  base = me.spriteNum - 2
+  i = 0
+  repeat while i <= 11
+    sprite(base + i).locH = sprite(base + i).locH - 150
+    i = 1 + i
+  end repeat
+  updateStage()
+end

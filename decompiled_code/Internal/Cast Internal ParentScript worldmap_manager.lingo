@@ -1,0 +1,80 @@
+property flwW, flwH, isoW, isoH, pLoc, pActTower, pResult
+global glob
+
+on new me
+  glob.setAt(#scrollMap, #YES)
+  pLoc = [0, 0]
+  member("iso_floor").regPoint = point(300, 270)
+  return me
+end
+
+on makeFloor me
+  flrW = 48
+  flrH = 60
+  isoW = member("iso_tile").width
+  isoH = member("iso_tile").height
+  img = image(isoW * flrW, isoH * flrH, 8, 0, member("netmap_pallet Palette"))
+  mem = member("iso_tile")
+  w = 1
+  repeat while w <= flrW
+    h = 1
+    repeat while h <= flrH
+      srcImg = mem.image
+      srcRect = mem.rect
+      dX = w - 1 * isoW
+      dY = h - 1 * isoH
+      destRect = rect(dX, dY, dX + isoW, dY + isoH)
+      img.copyPixels(srcImg, destRect, srcRect, [#ink: 8])
+      h = 1 + h
+    end repeat
+    w = 1 + w
+  end repeat
+  member("iso_floor").image = img
+  member("iso_floor").regPoint = point(240, 120)
+end
+
+on askLoc me
+  return pLoc
+end
+
+on storeLoc me
+  pLoc = sprite(glob.getAt(#mapFlrManager).spriteNum).loc
+end
+
+on reportActTower me, sp
+  pActTower = sp
+end
+
+on battleResult me, state
+  pResult = state
+  if glob.towerID = 40 or glob.towerID = 48 then
+    if state = #won then
+      glob.blackoutFlag = 0
+    end if
+  end if
+end
+
+on battleResultDisplay me
+  if voidp(glob.towerID) then
+    exit
+  end if
+  if pResult = #won then
+    if glob.towerID = 40 or glob.towerID = 48 then
+      if not glob.getPropRef(#WorldData, 40).state = #WIN then
+        glob.battleResultPanel.show(pActTower, pResult)
+      end if
+    else
+      glob.battleResultPanel.show(pActTower, pResult)
+    end if
+    glob.getPropRef(#WorldData, pActTower - 800).state = #WIN
+  else
+    if pResult = #lost then
+      if glob.towerID = 40 or glob.towerID = 48 then
+        if not glob.getPropRef(#WorldData, 40).state = #WIN then
+          glob.battleResultPanel.show(pActTower, pResult)
+        end if
+      end if
+    else
+    end if
+  end if
+end

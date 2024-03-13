@@ -1,0 +1,15 @@
+property my, pData, pCompany
+global glob
+
+on beginSprite me
+  if voidp(glob.getAt(#towerID)) then
+    glob.setAt(#towerID, 1)
+  end if
+  pData = glob.getProp(#WorldData, glob.towerID)
+  pCompany = pData.company
+  if pCompany = 0 then
+    pCompany = 1
+  end if
+  my = sprite(me.spriteNum)
+  my.member = member("companay_bkg_" & pCompany)
+end

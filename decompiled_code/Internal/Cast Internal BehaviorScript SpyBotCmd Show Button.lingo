@@ -1,0 +1,14 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+end
+
+on mouseUp me
+  if glob.game_manager.pState = #BATTLE and not glob.spybotCmdUsed then
+    glob.mapBoardObj.undoBySpyBot()
+    glob.mapBoardObj.pActAgent = 0
+    glob.infoManager.spyBotCmd(#on)
+  end if
+end

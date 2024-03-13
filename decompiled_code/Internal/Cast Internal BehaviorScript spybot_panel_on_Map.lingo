@@ -1,0 +1,50 @@
+property my, pData, pSnum, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#spybotOnMap, me)
+  pSnum = 920
+  my = sprite(920)
+  pState = #show
+  me.updateScreen()
+end
+
+on getSpybotInfo me
+  tLevel = 3
+  tId = glob.spybot_manager.pPos
+  tName = glob.spybot_manager.pName
+  pData = [#id: tId, #level: tLevel, #name: tName]
+end
+
+on updateScreen me
+  me.getSpybotInfo()
+  member("map_spybot_info").text = "LEVEL " & pData.level & ": " & pData.name
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  my.locV = my.locV + 150
+  i = 1
+  repeat while i <= 3
+    sprite(pSnum + i).locV = sprite(pSnum + i).locV + 150
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on show me
+  if pState = #show then
+    exit
+  end if
+  pState = #show
+  my.locV = my.locV - 150
+  i = 1
+  repeat while i <= 3
+    sprite(pSnum + i).locV = sprite(pSnum + i).locV - 150
+    i = 1 + i
+  end repeat
+  updateStage()
+end

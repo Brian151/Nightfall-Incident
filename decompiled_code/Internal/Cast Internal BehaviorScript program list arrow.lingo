@@ -1,0 +1,12 @@
+global glob
+
+on beginSprite me
+  glob.player_manager.reportArrow(me.spriteNum)
+end
+
+on mouseDown me
+  repeat while the stillDown
+    delayTime(100)
+    glob.player_manager.arrowClicked(me.spriteNum)
+  end repeat
+end

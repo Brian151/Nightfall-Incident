@@ -1,0 +1,14 @@
+global glob
+
+on mouseUp me
+  if glob.scrollMap = #NO then
+    exit
+  end if
+  if the frameLabel = "play" then
+    glob.setAt(#mode, #edit)
+    go("edit")
+  else
+    glob.setAt(#mode, #menu)
+    go("menu")
+  end if
+end

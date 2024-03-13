@@ -1,0 +1,12 @@
+global glob
+
+on mouseUp me
+  sprite(me.spriteNum).editable = 1
+  glob.map_manager.pState = #input
+  pass()
+end
+
+on editOff me
+  sprite(me.spriteNum).editable = 0
+  glob.map_manager.pState = #edit
+end

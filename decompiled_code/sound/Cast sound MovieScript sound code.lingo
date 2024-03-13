@@ -1,0 +1,716 @@
+global glob
+
+on initSound
+  glob.setAt(#soundVolume, [#music: 100, #sfx: 100])
+  glob.setAt(#musicChannel1, 7)
+  glob.setAt(#musicChannel2, 8)
+  glob.setAt(#sfxChannels, [1, 2, 3, 4, 5])
+  glob.setAt(#ambientChannel, 6)
+  glob.setAt(#musicStyle, #playlist)
+  glob.setAt(#musicPlaylist, "")
+  glob.setAt(#musicTrack1, "")
+  glob.setAt(#musicTrack2, "")
+  glob.setAt(#whichMusicPosition, 0)
+  glob.setAt(#howManyTracks, 2)
+  glob.setAt(#musicIsPlaying, 0)
+  glob.setAt(#autoAdvance, 0)
+  glob.setAt(#ambient, #on)
+  glob.setAt(#ambientInterval, 9)
+  glob.setAt(#ambientDefaultInterval, 10)
+  glob.setAt(#ambientTimer, 0)
+  glob.setAt(#soundDebug, 0)
+  glob.setAt(#soundExternalLoading, #on)
+  glob.setAt(#soundLoadingMode, #off)
+  glob.setAt(#soundNetID, VOID)
+  glob.setAt(#soundPath, VOID)
+  glob.setAt(#soundNetSource, 1)
+  glob.setAt(#soundNetSourceName, "")
+  glob.setAt(#soundNetSourcePostFix, ".cct")
+  glob.setAt(#soundCasts, ["snd_netload_1", "snd_netload_2", "snd_netload_3", "snd_netload_4", "snd_netload_5"])
+  if the environment.runMode = "Author" then
+    glob.setAt(#soundPath, the moviePath)
+    glob.setAt(#soundNetSourcePostFix, ".cst")
+  end if
+  SndMessage("InitSound")
+end
+
+on SndSetMusicVolume volume
+  glob.soundVolume.music = volume
+  sound(glob.getAt(#musicChannel1)).volume = integer(255.0 * volume / 100.0)
+  sound(glob.getAt(#musicChannel2)).volume = integer(255.0 * volume / 100.0)
+end
+
+on SndSetSFXVolume volume
+  glob.soundVolume.sfx = volume
+end
+
+on SndCheckPlaylist
+  if glob.getAt(#musicIsPlaying) = 1 then
+    SndLevelQueue()
+  end if
+  if glob.getAt(#ambient) <> #off then
+    if the ticks / 60 > glob.getAt(#ambientTimer) then
+      if glob.getAt(#blackoutFlag) = 1 then
+        SndSFX("snd_datamap_blackout_sfx")
+      else
+        SndSFX("snd_datamap_sfx")
+      end if
+      myInterval = random(glob.getAt(#ambientInterval)) + 10
+      glob.setAt(#ambientTimer, the ticks / 60 + myInterval)
+    end if
+  end if
+  if glob.getAt(#soundExternalLoading) = #on then
+    SndCheckLoadStatus()
+  end if
+end
+
+on SndSFX whichSound, sfxpan, sfxlevel, sfxpitch
+  if glob.soundVolume.sfx < 1 then
+    return 
+  end if
+  if sfxpan = VOID then
+    sfxpan = -999
+  end if
+  if sfxlevel = VOID then
+    sfxlevel = -999
+  end if
+  if sfxpitch = VOID then
+    sfxpitch = -999
+  end if
+  if member(whichSound).type = #sound then
+    mySound = whichSound
+  else
+    if member(whichSound).type = #text then
+      if line 1 of member(whichSound).text = "random" then
+        myLineNumber = random(SNDGetLineCount(whichSound)) + 1
+      else
+        if voidp(glob.getAt(whichSound)) then
+          glob.addProp(whichSound, 0)
+          myLineNumber = 2
+        else
+          glob.setAt(whichSound, glob.getAt(whichSound) + 1)
+          myLineNumber = glob.getAt(whichSound) mod SNDGetLineCount(whichSound) + 2
+        end if
+      end if
+      mySound = word 1 of member(whichSound).text
+      if sfxpan = -999 then
+        if word 2 of member(whichSound).text <> "" then
+          if word 2 of member(whichSound).text <> "-999" then
+            if word 2 of member(whichSound).text.charToNum = 91 then
+              myWord = word 2 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpan = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpan = integer(word 2 of member(whichSound).text)
+            end if
+          end if
+        end if
+        if word 2 of member(whichSound).text <> "" then
+          if word 2 of member(whichSound).text <> "-999" then
+            if word 2 of member(whichSound).text.charToNum = 91 then
+              myWord = word 2 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpan = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpan = integer(word 2 of member(whichSound).text)
+            end if
+          end if
+        end if
+      end if
+      if sfxlevel = -999 then
+        if word 3 of member(whichSound).text <> "" then
+          if word 3 of member(whichSound).text <> "-999" then
+            if word 3 of member(whichSound).text.charToNum = 91 then
+              myWord = word 3 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxlevel = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxlevel = integer(word 3 of member(whichSound).text)
+            end if
+          end if
+        end if
+        if word 3 of member(whichSound).text <> "" then
+          if word 3 of member(whichSound).text <> "-999" then
+            if word 3 of member(whichSound).text.charToNum = 91 then
+              myWord = word 3 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxlevel = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxlevel = integer(word 3 of member(whichSound).text)
+            end if
+          end if
+        end if
+      end if
+      if sfxpitch = -999 then
+        if word 4 of member(whichSound).text <> "" then
+          if word 4 of member(whichSound).text <> "-999" then
+            if word 4 of member(whichSound).text.charToNum = 91 then
+              myWord = word 4 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpitch = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpitch = integer(word 4 of member(whichSound).text)
+            end if
+          end if
+        end if
+        if word 4 of member(whichSound).text <> "" then
+          if word 4 of member(whichSound).text <> "-999" then
+            if word 4 of member(whichSound).text.charToNum = 91 then
+              myWord = word 4 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpitch = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpitch = integer(word 4 of member(whichSound).text)
+            end if
+          end if
+        end if
+      end if
+    else
+      SndMessage(whichSound & " is not a playlist or a sound. //SndSFX")
+      return 
+    end if
+  end if
+  numberOfChannels = glob.getAt(#sfxChannels).count
+  myList = [:]
+  mySoundChannel = 0
+  i = 1
+  repeat while i <= numberOfChannels
+    if soundBusy(getAt(glob.getAt(#sfxChannels), i)) = 0 then
+      mySoundChannel = i
+    else
+      i = 1 + i
+    end if
+  end repeat
+  if mySoundChannel = 0 then
+    mySoundChannel = getAt(glob.getAt(#sfxChannels), 1)
+  end if
+  if sfxpan = -999 or sfxpan = "-999" then
+    sfxpan = 0
+  end if
+  if sfxlevel = -999 or sfxlevel = "-999" then
+    sfxlevel = 255
+  end if
+  if sfxpitch = -999 or sfxpitch = "-999" then
+    sfxpitch = 0
+  end if
+  sound(getAt(glob.getAt(#sfxChannels), mySoundChannel)).stop()
+  sound(getAt(glob.getAt(#sfxChannels), mySoundChannel)).volume = integer(sfxlevel * glob.soundVolume.sfx / 100.0)
+  sound(getAt(glob.getAt(#sfxChannels), mySoundChannel)).pan = sfxpan
+  sound(getAt(glob.getAt(#sfxChannels), mySoundChannel)).queue([#member: member(mySound), #rateShift: sfxpitch])
+  sound(getAt(glob.getAt(#sfxChannels), mySoundChannel)).play()
+  SndMessage("SndSFX: " & mySound)
+  SndMessage("sfxpan:" & sfxpan & "  sfxlevel:" & sfxlevel & "  sfxpitch:" & sfxpitch)
+  return mySoundChannel
+end
+
+on SndSFXStop whichChannel
+  sound(getAt(glob.getAt(#sfxChannels), whichChannel)).stop()
+end
+
+on SndMusicStart whichSound, autoAdvance
+  if glob.getAt(#blackoutFlag) = 1 then
+    whichSound = "music_databattle_6"
+    if member("whichSound").type = #empty then
+      whichSound = "music_databattle_1"
+    end if
+  end if
+  if whichSound = "music_databattle_1" then
+    if glob.getAt(#soundExternalLoading) = #on and glob.getAt(#soundLoadingMode) <> #done then
+      SndStartLoading()
+    end if
+    whichSound = "whichMusicShouldItBe"
+    if glob.getAt(#soundNetSource) > 5 then
+      myLimit = 5
+    else
+      myLimit = glob.getAt(#soundNetSource)
+    end if
+    repeat while member(whichSound).type = #empty
+      randomNumber = random(myLimit)
+      whichSound = "music_databattle_" & randomNumber
+    end repeat
+    exit repeat
+  end if
+  SndAbortLoading()
+  if whichSound = "music_worldmap" and glob.getAt(#blackoutFlag) = 1 then
+    whichSound = "music_worldmap_blackout"
+  end if
+  SndMessage("SndMusicStart " & whichSound)
+  glob.setAt(#musicTrack1, "")
+  glob.setAt(#musicTrack2, "")
+  if autoAdvance = VOID then
+    glob.setAt(#autoAdvance, 0)
+  else
+    glob.setAt(#autoAdvance, autoAdvance)
+  end if
+  glob.setAt(#whichMusicPosition, 2)
+  SndMusicChooseSounds(whichSound)
+  if glob.getAt(#musicTrack1) = "" then
+    return 
+  end if
+  sound(glob.getAt(#musicChannel1)).setPlayList([:])
+  sound(glob.getAt(#musicChannel2)).setPlayList([:])
+  sound(glob.getAt(#musicChannel1)).stop()
+  sound(glob.getAt(#musicChannel2)).stop()
+  SndMusicFill()
+  glob.setAt(#musicIsPlaying, 1)
+  sound(glob.getAt(#musicChannel1)).pan = 0
+  sound(glob.getAt(#musicChannel2)).pan = 0
+  sound(glob.getAt(#musicChannel1)).volume = 255 * glob.soundVolume.music / 100
+  sound(glob.getAt(#musicChannel2)).volume = 255 * glob.soundVolume.music / 100
+  if glob.getAt(#musicTrack2).type = #empty then
+    sound(glob.getAt(#musicChannel1)).play()
+  else
+    sound(glob.getAt(#musicChannel1)).play()
+    sound(glob.getAt(#musicChannel2)).play()
+  end if
+end
+
+on SndMusicBranch whichSound, autoAdvance
+  if glob.getAt(#musicIsPlaying) = 1 then
+    if autoAdvance = VOID then
+      glob.setAt(#autoAdvance, 0)
+    else
+      glob.setAt(#autoAdvance, autoAdvance)
+    end if
+    glob.setAt(#whichMusicPosition, 1)
+    SndMusicChooseSounds(whichSound)
+    sound(glob.getAt(#musicChannel1)).setPlayList([:])
+    sound(glob.getAt(#musicChannel2)).setPlayList([:])
+    SndMusicFill()
+  end if
+end
+
+on SndMusicAdvance
+  glob.setAt(#whichMusicPosition, glob.getAt(#whichMusicPosition) + 1)
+  SndMusicChooseSounds(glob.getAt(#musicPlaylist))
+  sound(glob.getAt(#musicChannel1)).setPlayList([:])
+  sound(glob.getAt(#musicChannel2)).setPlayList([:])
+  SndMusicFill()
+end
+
+on SndMusicChooseSounds whichSound
+  mySound1 = "nothing"
+  mySound2 = "nothing"
+  if member(whichSound).type = #sound then
+    mySound1 = whichSound
+    glob.setAt(#howManyTracks, 1)
+    glob.setAt(#musicStyle, #sound)
+  else
+    if member(whichSound).type = #text then
+      if word 1 of member(whichSound).text = "random" then
+        myLineNumber = random(SNDGetLineCount(whichSound)) + 1
+        glob.setAt(#musicStyle, #random)
+      else
+        glob.setAt(#musicStyle, #playlist)
+        if glob.getAt(#whichMusicPosition) > SNDGetLineCount(member(whichSound).name) + 1 then
+          glob.setAt(#whichMusicPosition, 2)
+        end if
+        myLineNumber = glob.getAt(#whichMusicPosition)
+      end if
+      if the number of word in ERROR > 1 then
+        mySound1 = SndPickSound(word 1 of member(whichSound).text)
+        SndMessage(mySound1)
+        mySound2 = SndPickSound(word 2 of member(whichSound).text)
+        SndMessage(mySound2)
+        glob.setAt(#howManyTracks, 2)
+      else
+        mySound1 = SndPickSound(word 1 of member(whichSound).text)
+        SndMessage(mySound1)
+        glob.setAt(#howManyTracks, 1)
+      end if
+    else
+      SndMessage("//SndMusicChooseSounds: " & whichSound & " is not a playlist or a sound. ")
+      return 
+    end if
+  end if
+  glob.setAt(#musicTrack1, member(mySound1))
+  glob.setAt(#musicTrack2, member(mySound2))
+  glob.setAt(#musicPlaylist, whichSound)
+end
+
+on SndMusicFill
+  myList1 = [[:]]
+  myList2 = [[:]]
+  if glob.getAt(#musicStyle) = #random then
+    SndMusicChooseSounds(glob.getAt(#musicPlaylist))
+  end if
+  mySound1 = glob.getAt(#musicTrack1)
+  mySound2 = glob.getAt(#musicTrack2)
+  if mySound2.type <> #empty then
+    if mySound1.duration <= mySound2.duration then
+      lowestDuration = mySound1.duration
+    else
+      lowestDuration = mySound2.duration
+    end if
+  else
+    lowestDuration = mySound1.duration
+  end if
+  if glob.getAt(#musicStyle) = #playlist or glob.getAt(#musicStyle) = #random then
+    if word 2 of member(glob.getAt(#musicPlaylist)).text = "" then
+      numberOfLoops = 4
+    else
+      numberOfLoops = integer(word 2 of member(glob.getAt(#musicPlaylist)).text)
+    end if
+  else
+    numberOfLoops = 4
+  end if
+  j = 1
+  repeat while j <= numberOfLoops
+    myList1.add([#member: mySound1, #startTime: 0, #endTime: lowestDuration, #preLoadTime: 1500])
+    if mySound2.name <> "" then
+      myList2.add([#member: mySound2, #startTime: 0, #endTime: lowestDuration, #preLoadTime: 1500])
+    end if
+    j = 1 + j
+  end repeat
+  sound(glob.getAt(#musicChannel1)).setPlayList(myList1)
+  sound(glob.getAt(#musicChannel2)).setPlayList(myList2)
+end
+
+on SndPickSound whichList
+  if whichList.charToNum = 91 then
+    myLength = whichList.length
+    myList = whichList.getProp(#char, 2, myLength - 1)
+    myRandom = random(the number of item in myList)
+    mySound = ERROR
+  else
+    mySound = whichList
+  end if
+  return mySound
+end
+
+on SndLevelQueue
+  if sound(glob.getAt(#musicChannel1)).getPlayList().count < 1 then
+    if glob.getAt(#autoAdvance) = 1 then
+      SndMusicAdvance()
+    else
+      SndMusicFill()
+    end if
+  end if
+end
+
+on sndMusicStop
+  sound(glob.getAt(#musicChannel1)).stop()
+  sound(glob.getAt(#musicChannel2)).stop()
+  glob.setAt(#musicIsPlaying, 0)
+end
+
+on SndMusicEnd
+  myList1 = [[:]]
+  myList2 = [[:]]
+  if glob.getAt(#musicIsPlaying) = 1 then
+    glob.setAt(#musicIsPlaying, 0)
+    sound(glob.getAt(#musicChannel1)).setPlayList([:])
+    sound(glob.getAt(#musicChannel2)).setPlayList([:])
+    whichSound = glob.getAt(#musicPlaylist) & "_end"
+    memberCheck = member(whichSound).number
+    if memberCheck > 0 then
+      mySound1 = member(word 1 of member(whichSound).text)
+      SndMessage(mySound1)
+      lowestDuration = mySound1.duration
+      myList1.add([#member: mySound1, #startTime: 0, #endTime: lowestDuration, #preLoadTime: 1500])
+      sound(glob.getAt(#musicChannel1)).setPlayList(myList1)
+      sound(glob.getAt(#musicChannel2)).setPlayList(myList2)
+    end if
+  end if
+end
+
+on SNDGetLineCount myMember
+  myLineCount = 0
+  i = 1
+  repeat while i <= member(myMember).count(#line)
+    if ERROR <> "" then
+      myLineCount = myLineCount + 1
+    end if
+    i = 1 + i
+  end repeat
+  myLineCount = myLineCount - 1
+  return myLineCount
+end
+
+on SndStop
+  sound(glob.getAt(#musicChannel1)).stop()
+  sound(glob.getAt(#musicChannel2)).stop()
+  numberOfChannels = glob.getAt(#sfxChannels).count
+  i = 1
+  repeat while i <= numberOfChannels
+    whichChannel = getAt(glob.getAt(#sfxChannels), i)
+    sound(whichChannel).stop()
+    i = 1 + i
+  end repeat
+  glob.setAt(#musicIsPlaying, 0)
+end
+
+on SndAmbientSFX whichSound, fadeTime, sfxpan, sfxlevel, sfxpitch
+  if glob.soundVolume.sfx < 1 then
+    return 
+  end if
+  if fadeTime = VOID then
+    fadeTime = 0
+  end if
+  if sfxpan = VOID then
+    sfxpan = -999
+  end if
+  if sfxlevel = VOID then
+    sfxlevel = -999
+  end if
+  if sfxpitch = VOID then
+    sfxpitch = -999
+  end if
+  if member(whichSound).type = #sound then
+    mySound = whichSound
+  else
+    if member(whichSound).type = #text then
+      if line 1 of member(whichSound).text = "random" then
+        myLineNumber = random(SNDGetLineCount(whichSound)) + 1
+      else
+        if voidp(glob.getAt(whichSound)) then
+          glob.addProp(whichSound, 0)
+          myLineNumber = 2
+        else
+          glob.setAt(whichSound, glob.getAt(whichSound) + 1)
+          myLineNumber = glob.getAt(whichSound) mod SNDGetLineCount(whichSound) + 2
+        end if
+      end if
+      mySound = word 1 of member(whichSound).text
+      if sfxpan = -999 then
+        if word 2 of member(whichSound).text <> "" then
+          if word 2 of member(whichSound).text <> "-999" then
+            if word 2 of member(whichSound).text.charToNum = 91 then
+              myWord = word 2 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpan = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpan = integer(word 2 of member(whichSound).text)
+            end if
+          end if
+        end if
+        if word 2 of member(whichSound).text <> "" then
+          if word 2 of member(whichSound).text <> "-999" then
+            if word 2 of member(whichSound).text.charToNum = 91 then
+              myWord = word 2 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpan = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpan = integer(word 2 of member(whichSound).text)
+            end if
+          end if
+        end if
+      end if
+      if sfxlevel = -999 then
+        if word 3 of member(whichSound).text <> "" then
+          if word 3 of member(whichSound).text <> "-999" then
+            if word 3 of member(whichSound).text.charToNum = 91 then
+              myWord = word 3 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxlevel = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxlevel = integer(word 3 of member(whichSound).text)
+            end if
+          end if
+        end if
+        if word 3 of member(whichSound).text <> "" then
+          if word 3 of member(whichSound).text <> "-999" then
+            if word 3 of member(whichSound).text.charToNum = 91 then
+              myWord = word 3 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxlevel = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxlevel = integer(word 3 of member(whichSound).text)
+            end if
+          end if
+        end if
+      end if
+      if sfxpitch = -999 then
+        if word 4 of member(whichSound).text <> "" then
+          if word 4 of member(whichSound).text <> "-999" then
+            if word 4 of member(whichSound).text.charToNum = 91 then
+              myWord = word 4 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpitch = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpitch = integer(word 4 of member(whichSound).text)
+            end if
+          end if
+        end if
+        if word 4 of member(whichSound).text <> "" then
+          if word 4 of member(whichSound).text <> "-999" then
+            if word 4 of member(whichSound).text.charToNum = 91 then
+              myWord = word 4 of member(whichSound).text
+              myLength = myWord.length - 1
+              myText = myWord.getProp(#char, 2, myLength)
+              highNumber = integer(item 2 of myText)
+              lowNumber = integer(item 1 of myText)
+              sfxpitch = random(highNumber - lowNumber) + lowNumber
+            else
+              sfxpitch = integer(word 4 of member(whichSound).text)
+            end if
+          end if
+        end if
+      end if
+    else
+      SndMessage(whichSound & " is not a playlist or a sound. //SndSFX")
+      return 
+    end if
+  end if
+  myList = [:]
+  if sfxpan = -999 or sfxpan = "-999" then
+    sfxpan = 0
+  end if
+  if sfxlevel = -999 or sfxlevel = "-999" then
+    sfxlevel = 255
+  end if
+  if sfxpitch = -999 or sfxpitch = "-999" then
+    sfxpitch = 0
+  end if
+  sound(glob.getAt(#ambientChannel)).stop()
+  if glob.soundVolume.sfx > 0 then
+    if fadeTime < 0 then
+      sound(glob.getAt(#ambientChannel)).fadeOut(abs(fadeTime))
+    else
+      if fadeTime > 0 then
+        sound(glob.getAt(#ambientChannel)).fadeIn(fadeTime)
+      end if
+    end if
+  else
+    sound(glob.getAt(#ambientChannel)).volume = 0
+  end if
+  sound(glob.getAt(#ambientChannel)).pan = sfxpan
+  sound(glob.getAt(#ambientChannel)).queue([#member: member(mySound), #rateShift: sfxpitch])
+  sound(glob.getAt(#ambientChannel)).play()
+  SndMessage("SndAmbientSFX: " & mySound)
+end
+
+on SndAmbientSFXStop
+  sound(glob.getAt(#ambientChannel)).stop()
+end
+
+on SndAmbientStart whichSound
+  if member(whichSound).type = #sound then
+    mySound = whichSound
+    myInterval = glob.getAt(#ambientDefaultInterval)
+  else
+    if member(whichSound).type = #text then
+      mySound = word 1 of member(whichSound).text
+      myInterval = word 2 of member(whichSound).text
+    else
+      SndMessage("SndAmbientStart - " & whichSound & " is not a playlist or a sound.")
+    end if
+  end if
+  glob.setAt(#ambient, mySound)
+  glob.setAt(#ambientInterval, myInterval)
+  glob.setAt(#ambientTimer, 0)
+end
+
+on SndAmbientStop
+  glob.setAt(#ambient, #off)
+end
+
+on SndMessage Message
+  if glob.getAt(#soundDebug) = 1 then
+    put Message
+  end if
+end
+
+on SndStartLoading
+  glob.setAt(#soundLoadingMode, #on)
+  whichCast = getAt(glob.getAt(#soundCasts), glob.getAt(#soundNetSource)) & glob.getAt(#soundNetSourcePostFix)
+  SndLoadNetSource(whichCast)
+end
+
+on SndLoadNetSource whichCast
+  glob.setAt(#soundNetID, preloadNetThing(glob.getAt(#soundPath) & whichCast))
+  glob.setAt(#soundNetSourceName, whichCast)
+end
+
+on SndCheckLoadStatus
+  if glob.getAt(#soundLoadingMode) = #on then
+    if netError() = "OK" then
+      if netDone(glob.getAt(#soundNetID)) then
+        castLib("sound_level_" & glob.getAt(#soundNetSource)).fileName = glob.getAt(#soundPath) & glob.getAt(#soundNetSourceName)
+        SndMessage("Netloaded..." & glob.getAt(#soundNetSourceName))
+        glob.setAt(#soundNetSource, glob.getAt(#soundNetSource) + 1)
+        if glob.getAt(#soundNetSource) > glob.getAt(#soundCasts).count then
+          glob.setAt(#soundLoadingMode, #done)
+          SndMessage("Done Loading Sounds!")
+        else
+          whichCast = getAt(glob.getAt(#soundCasts), glob.getAt(#soundNetSource)) & glob.getAt(#soundNetSourcePostFix)
+          SndLoadNetSource(whichCast)
+        end if
+      end if
+    else
+      SndMessage("netError = " & netError())
+    end if
+  end if
+end
+
+on SndAbortLoading
+  netAbort(glob.getAt(#soundNetID))
+  if glob.getAt(#soundLoadingMode) = #on then
+    glob.setAt(#soundLoadingMode, #off)
+  end if
+end
+
+on SndFixCastLibraries
+  if the environment.runMode = "Author" then
+    glob.setAt(#soundNetSource, 1)
+    repeat while glob.getAt(#soundNetSource) <= glob.getAt(#soundCasts).count
+      whichCast = "sound_level_" & glob.getAt(#soundNetSource) & ".cst"
+      SndMessage("Loading..." & whichCast)
+      SndLoadNetSource(whichCast)
+      repeat while not netDone(glob.getAt(#soundNetID))
+      end repeat
+      castLib("sound_level_" & glob.getAt(#soundNetSource)).fileName = glob.getAt(#soundPath) & whichCast
+      glob.setAt(#soundNetSource, glob.getAt(#soundNetSource) + 1)
+    end repeat
+    SndMessage("SndFixCastLibraries done.")
+  end if
+end
+
+on SndLoadCastLibraries
+  if the environment.runMode = "Author" then
+    glob.setAt(#soundNetSource, 1)
+    repeat while glob.getAt(#soundNetSource) <= glob.getAt(#soundCasts).count
+      whichCast = getAt(glob.getAt(#soundCasts), glob.getAt(#soundNetSource)) & glob.getAt(#soundNetSourcePostFix)
+      SndMessage("Loading..." & whichCast)
+      SndLoadNetSource(whichCast)
+      repeat while not netDone(glob.getAt(#soundNetID))
+      end repeat
+      castLib("sound_level_" & glob.getAt(#soundNetSource)).fileName = glob.getAt(#soundPath) & whichCast
+      glob.setAt(#soundNetSource, glob.getAt(#soundNetSource) + 1)
+    end repeat
+    SndMessage("SndFixCastLibraries done.")
+  end if
+end

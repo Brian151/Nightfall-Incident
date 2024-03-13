@@ -1,0 +1,20 @@
+property my
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.width = 1
+end
+
+on exitFrame me
+  if my.width < 240 then
+    my.width = my.width + 10
+  else
+    if my.width > 240 then
+      my.width = 240
+    else
+      if sprite(me.spriteNum + 2).visible = 0 then
+        sprite(me.spriteNum + 2).visible = 1
+      end if
+    end if
+  end if
+end

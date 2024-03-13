@@ -1,0 +1,6 @@
+global glob
+
+on mouseUp me
+  SndSFX("snd_logout")
+  glob.endBattleBoard.logOut()
+end

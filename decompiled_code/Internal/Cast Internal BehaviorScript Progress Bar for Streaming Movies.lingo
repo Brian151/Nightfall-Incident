@@ -1,0 +1,123 @@
+property URL, pBarWidth, statList, percentDone, pBarConverter, showPercent, percentMember, currentSprite, percentText, showText
+
+on isOKToAttach me, aSpriteType, aSpriteNum
+  case aSpriteType of
+    #graphic:
+      return getPos([#shape], sprite(aSpriteNum).member.type) <> 0
+    #script:
+      return 0
+  end case
+end
+
+on getPropertyDescriptionList
+  casts = []
+  textList = []
+  numLibs = the ERROR
+  i = 1
+  repeat while i <= numLibs
+    add(casts, castLib(i).name)
+    i = 1 + i
+  end repeat
+  n = 1
+  repeat while n <= count(casts)
+    castToCheck = getAt(casts, n)
+    numMems = the number of castMembers
+    x = 1
+    repeat while x <= numMems
+      m = member(x, n)
+      case m.type of
+        #text, #field:
+          if m.name = "" then
+            add(textList, m)
+          else
+            add(textList, m.name)
+          end if
+      end case
+      x = 1 + x
+    end repeat
+    n = 1 + n
+  end repeat
+  description = [:]
+  if textList <> [] then
+    addProp(description, #showPercent, [#comment: "Enable Display of Percent Loaded", #format: #boolean, #default: 0])
+    addProp(description, #percentMember, [#comment: "Display Percent Loaded in Member", #format: #string, #range: textList, #default: getAt(textList, 1)])
+  end if
+  return description
+end
+
+on beginSprite me
+  showText = 0
+  casts = []
+  textList = []
+  numLibs = the ERROR
+  i = 1
+  repeat while i <= numLibs
+    add(casts, castLib(i).name)
+    i = 1 + i
+  end repeat
+  n = 1
+  repeat while n <= count(casts)
+    castToCheck = getAt(casts, n)
+    numMems = the number of castMembers
+    x = 1
+    repeat while x <= numMems
+      m = member(x, n)
+      case m.type of
+        #text, #field:
+          if m.name = "" then
+            add(textList, m)
+          else
+            add(textList, m.name)
+          end if
+      end case
+      x = 1 + x
+    end repeat
+    n = 1 + n
+  end repeat
+  if textList <> [] then
+    showText = 1
+  end if
+  floatPrecision = 2
+  currentSprite = me.spriteNum
+  pBarWidth = sprite(currentSprite).width
+  pBarConverter = float(pBarWidth) / 100
+  URL = the moviePath & the movieName
+  CheckStatus(me)
+end
+
+on exitFrame me
+  CheckStatus(me)
+end
+
+on CheckStatus me
+  statList = getStreamStatus(URL)
+  if statList.state <> "Complete" then
+    if statList.bytesSoFar > 0 then
+      percentDone = statList.bytesSoFar * 100.00010000000000332 / statList.bytesTotal
+      sprite(currentSprite).width = integer(percentDone * pBarConverter)
+      percentText = percentDone & "%"
+    else
+      sprite(currentSprite).width = 0
+      percentText = "0%"
+    end if
+  else
+    sprite(currentSprite).width = pBarWidth
+    percentText = "100%"
+    member("preload_msg").text = member("preload_msg_text").text
+    updateStage()
+    doStartMovie()
+  end if
+  if showText = 1 then
+    if percentText <> member(percentMember).text and showPercent then
+      member(percentMember).text = percentText
+    end if
+  end if
+end
+
+on getBehaviorDescription me
+  return "What the behavior does:" & RETURN & RETURN & "Turns a sprite into a progress bar, indicating progress of the current movie's stream." & RETURN & RETURN & "How to use:" & RETURN & RETURN & "1. " & "Drag and drop this behavior on to the sprite that should act as the progress bar. " & "This behavior can only be applied to a QD Shape sprite." & RETURN & RETURN & "2. " & "Display Percent Downloaded (Optional)." & RETURN & RETURN & "If a field or text castmember is detected in one of the movie's casts, there is an additional option to display the percent downloaded of the movie. " & "Check the checkbox provided to enable display of percent downloaded, and select the castmember that should be used to display the percent."
+end
+
+on getBehaviorTooltip me
+  return "Use this behavior to create an animating progress bar for a streaming movie. " & "Drop it on the sprite that will be used as the progress bar. " & "If a field or text castmember exists, there is an additional option to display the percent of the movie that has been downloaded."
+end

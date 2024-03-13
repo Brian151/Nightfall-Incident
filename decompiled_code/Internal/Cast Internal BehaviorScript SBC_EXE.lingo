@@ -1,0 +1,20 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+end
+
+on mouseUp me
+  glob.spybotCmdUsed = 1
+  glob.spybot_manager.exeAction()
+end
+
+on exitFrame me
+  if glob.infoManager.pSpyBotCmd = #off then
+    my.visible = 0
+  else
+    my.visible = 1
+    my.blend = 70
+  end if
+end

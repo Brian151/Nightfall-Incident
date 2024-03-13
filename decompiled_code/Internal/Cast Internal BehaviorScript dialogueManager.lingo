@@ -1,0 +1,181 @@
+property my, pSp, pState, pPos, pDataLogic, pDataText
+global glob
+
+on beginSprite me
+  glob.setAt(#dialogueManager, me)
+  pSp = me.spriteNum
+  my = sprite(pSp)
+  pState = #hide
+end
+
+on reportShowState me
+  if pState = #hide then
+    return 0
+  else
+    return 1
+  end if
+end
+
+on show me, state
+  if pState = #show then
+    exit
+  end if
+  glob.setAt(#scrollMap, #NO)
+  SndSFX("snd_im")
+  if not voidp(state) then
+    glob.towerID = 48
+  end if
+  tower = glob.towerID
+  case glob.towerID of
+    44:
+      if glob.getPropRef(#WorldData, 2).state = #WIN then
+        tower = 2
+      end if
+    45:
+      if glob.getPropRef(#WorldData, 12).state = #WIN then
+        tower = 12
+      end if
+    46:
+      if glob.getPropRef(#WorldData, 19).state = #WIN then
+        tower = 19
+      end if
+    47:
+      if glob.getPropRef(#WorldData, 29).state = #WIN then
+        tower = 29
+      end if
+  end case
+  put "TOWER ID:" & tower
+  pPos = 1
+  pDataLogic = glob.getProp(#nodesLogic, tower)
+  temp = cleanWhitespace(member("node_" & tower & "_dialogue").text)
+  pDataText = value(temp)
+  pState = #show
+  base = me.spriteNum - 1
+  i = 0
+  repeat while i <= 6
+    sprite(base + i).locV = sprite(base + i).locV - 325
+    i = 1 + i
+  end repeat
+  me.updateText()
+  updateStage()
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  base = me.spriteNum - 1
+  i = 0
+  repeat while i <= 6
+    sprite(base + i).locV = sprite(base + i).locV + 325
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on clicked me, num
+  if voidp(pPos) then
+    pPos = 1
+  end if
+  temp = pDataLogic.getPropRef(#ORDER, pPos).getProp(#OPTION, num)
+  case temp.action of
+    #dialogue:
+      pPos = temp.ARG
+      if pPos > 0 then
+        me.updateText()
+      end if
+    #giveSpybot:
+      me.hide()
+      glob.setAt(#scrollMap, #YES)
+    #giveMessage:
+      me.hide()
+      glob.setAt(#scrollMap, #YES)
+      glob.whatIgot.show(#Message, temp.ARG)
+    #giveCredit:
+      glob.credits = glob.credits + temp.ARG
+      me.hide()
+      glob.whatIgot.show(#credits, temp.ARG)
+      glob.setAt(#scrollMap, #YES)
+      glob.file_manager.savePref()
+    #giveProgram:
+      me.hide()
+      agentName = temp.ARG
+      glob.player_manager.buyNewAgent(agentName)
+      agentData = glob.agent_manager.passAgentDesc(agentName)
+      glob.whatIgot.show(#program, agentData.NAMETEXT)
+      glob.setAt(#scrollMap, #YES)
+      glob.file_manager.savePref()
+    #levelUpgrade:
+      me.hide()
+      glob.sLevel = glob.sLevel + 1
+      glob.setAt(#scrollMap, #YES)
+      glob.file_manager.savePref()
+      glob.whatIgot.show(#security, glob.sLevel)
+    #goShop:
+      me.hide()
+      glob.warez.show()
+      glob.playerPrograms.show()
+      tempId = glob.towerID
+      case glob.towerID of
+        44:
+          tempId = 2
+        45:
+          tempId = 12
+        46:
+          tempId = 19
+        47:
+          tempId = 29
+      end case
+      glob.getPropRef(#WorldData, tempId).state = #WIN
+      sprite(800 + tempId).pState = #WIN
+      sprite(800 + tempId).toggle()
+      glob.file_manager.savePref()
+    #goSmart:
+      me.hide()
+      glob.smartnode.show()
+    #showNode:
+      me.hide()
+      sprite(800 + temp.ARG).vMouseDown(#bipass)
+      if glob.getPropRef(#WorldData, temp.ARG).state = #off then
+        glob.getPropRef(#WorldData, temp.ARG).state = #on
+        sprite(800 + temp.ARG).pState = #on
+      else
+        if glob.getPropRef(#WorldData, temp.ARG).state = #on then
+        end if
+      end if
+      sprite(800 + temp.ARG).toggle()
+      glob.setAt(#scrollMap, #YES)
+      glob.file_manager.savePref()
+    #close:
+      me.hide()
+      glob.setAt(#scrollMap, #YES)
+      sendAllSprites(#selectCheckOff)
+      sendAllSprites(#resetTowerImg)
+    #tutorial:
+      me.hide()
+      glob.setAt(#scrollMap, #NO)
+      go("tutorial")
+    #blackoutFix:
+      me.hide()
+      glob.setAt(#scrollMap, #YES)
+      glob.blackout.hide()
+  end case
+end
+
+on updateText me
+  temp = pDataLogic.getProp(#ORDER, pPos)
+  who = temp.who
+  tempName = glob.getProp(#personals, who)
+  member("dialogue_ch_name").text = tempName
+  sprite(me.spriteNum + 1).member = member("portrait_" & who)
+  textList = pDataText.getAt(symbol(temp.text))
+  member("dialogue_text").text = textList.getAt(1)
+  member("dialogue_answer1").text = textList.getAt(2)
+  if temp.count(#OPTION) = 1 then
+    sprite(me.spriteNum + 5).visible = 0
+  else
+    sprite(me.spriteNum + 5).visible = 1
+    member("dialogue_answer2").text = textList.getAt(3)
+  end if
+end

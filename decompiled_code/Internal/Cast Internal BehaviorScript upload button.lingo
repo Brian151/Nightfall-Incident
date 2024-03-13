@@ -1,0 +1,46 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.blend = 0
+end
+
+on mouseUp me
+  if my.blend > 0 then
+    glob.player_manager.uploadProgram()
+  end if
+end
+
+on exitFrame me
+  if glob.game_manager.pState = #BATTLE then
+    my.blend = 0
+    exit
+  end if
+  temp = glob.player_manager.pActAgent
+  if voidp(temp) then
+    exit
+  end if
+  if temp = 0 then
+    my.blend = 0
+  else
+    if voidp(glob.map_manager.pMapClickPos) then
+      my.blend = 0
+    else
+      agent = glob.map_manager.agentExist(glob.map_manager.pMapClickPos)
+      if agent = 0 then
+        my.blend = 70
+      else
+        if agent.OBJ.pType = #item then
+          my.blend = 70
+        else
+          if agent.OBJ.pTeam = #com then
+            my.blend = 0
+          else
+            my.blend = 70
+          end if
+        end if
+      end if
+    end if
+  end if
+end

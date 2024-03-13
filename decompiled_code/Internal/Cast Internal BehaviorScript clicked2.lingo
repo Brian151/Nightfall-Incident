@@ -1,0 +1,5 @@
+global glob
+
+on mouseUp me
+  glob.dialogueManager.clicked(2)
+end

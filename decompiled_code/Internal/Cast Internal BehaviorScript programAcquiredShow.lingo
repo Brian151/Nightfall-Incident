@@ -1,0 +1,52 @@
+property pSnum, pState, pTime, pDelay, pProgram
+global glob
+
+on beginSprite me
+  glob.setAt(#programAcquiredBox, me)
+  pSnum = me.spriteNum
+  pState = #hide
+  pDelay = 2000
+end
+
+on exitFrame me
+  if pState = #show then
+    if pTime + pDelay < the milliSeconds then
+      me.hide()
+    end if
+  end if
+end
+
+on show me, program
+  SndSFX("snd_im")
+  if pState = #show then
+    if not pProgram = program then
+      pProgram = program
+      member("program_acquired_name_here").text = pProgram
+      pTime = the milliSeconds
+    end if
+    exit
+  end if
+  pProgram = program
+  member("program_acquired_name_here").text = pProgram
+  pState = #show
+  i = 0
+  repeat while i <= 2
+    sprite(pSnum + i).locV = sprite(pSnum + i).locV + 400
+    i = 1 + i
+  end repeat
+  updateStage()
+  pTime = the milliSeconds
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  i = 0
+  repeat while i <= 2
+    sprite(pSnum + i).locV = sprite(pSnum + i).locV - 400
+    i = 1 + i
+  end repeat
+  updateStage()
+end

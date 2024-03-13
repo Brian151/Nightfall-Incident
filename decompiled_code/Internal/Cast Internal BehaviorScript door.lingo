@@ -1,0 +1,21 @@
+property my, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#door, me)
+  my = sprite(me.spriteNum)
+end
+
+on exitFrame me
+  if the frameLabel = "entry" and voidp(pState) then
+    me.open()
+    pState = 1
+  end if
+end
+
+on close me
+  go("entry")
+end
+
+on open me
+end

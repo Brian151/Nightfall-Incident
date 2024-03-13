@@ -1,0 +1,36 @@
+property sp, pLoc, pFlag
+global glob
+
+on beginSprite me
+  glob.setAt(#uploadManager, me)
+  sp = me.spriteNum
+end
+
+on enterFrame me
+end
+
+on show me
+  x = 1
+  repeat while x <= 30
+    i = 0
+    repeat while i <= 8
+      sprite(sp + i).locH = sprite(sp + i).locH + 5
+      updateStage()
+      i = 1 + i
+    end repeat
+    x = 1 + x
+  end repeat
+end
+
+on hide me
+  x = 1
+  repeat while x <= 30
+    i = 0
+    repeat while i <= 8
+      sprite(sp + i).locH = sprite(sp + i).locH - 5
+      updateStage()
+      i = 1 + i
+    end repeat
+    x = 1 + x
+  end repeat
+end

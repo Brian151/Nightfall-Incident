@@ -1,0 +1,35 @@
+property base, pPos
+global glob
+
+on beginSprite me
+  glob.setAt(#confirm, me)
+  base = me.spriteNum
+end
+
+on show me, num
+  pPos = num
+  i = 0
+  repeat while i <= 3
+    sprite(base - i).locV = sprite(base - i).locV - 400
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on hide me
+  i = 0
+  repeat while i <= 3
+    sprite(base - i).locV = sprite(base - i).locV + 400
+    i = 1 + i
+  end repeat
+  updateStage()
+end
+
+on YES me
+  glob.SaveFilesBH.deleteSlot(pPos)
+  me.hide()
+end
+
+on NO me
+  me.hide()
+end

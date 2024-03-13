@@ -1,0 +1,77 @@
+property pCmds, pLine
+global glob
+
+on new me
+  pCmds = []
+  return me
+end
+
+on passList me
+  return pCmds
+end
+
+on selectCmd me, lineNum
+  if lineNum > pCmds.count or lineNum < 0 then
+    exit
+  end if
+  pLine = lineNum
+  member("cmd_name").text = pCmds.getAt(lineNum).name
+end
+
+on openData me
+  if voidp(pLine) then
+    exit
+  end if
+  data = pCmds.getAt(pLine)
+  glob.cmdInput.openCmdToEdit(data, pLine)
+  member("cmd_name").text = ""
+  pLine = VOID
+end
+
+on deleteData me
+  if voidp(pLine) then
+    exit
+  end if
+  pCmds.deleteAt(pLine)
+  me.SaveFile()
+  member("cmd_name").text = ""
+  pLine = VOID
+end
+
+on loadData me, flag
+  pCmds = value(member("data_cmds").text)
+  if voidp(flag) then
+    glob.cmdList.loadList()
+  end if
+end
+
+on SaveData me, data, pos
+  if pos = 0 then
+    pCmds.add(data)
+  else
+    pCmds.setAt(pos, data)
+  end if
+  me.SaveFile()
+end
+
+on SaveFile me
+  member("data_cmds").text = string(pCmds)
+  me.loadData()
+end
+
+on passData me
+  return pCmds
+end
+
+on actionDesc me, what
+  data = #error
+  i = 1
+  repeat while i <= pCmds.count
+    if what = pCmds.getAt(i).name then
+      data = pCmds.getAt(i)
+    else
+      i = 1 + i
+    end if
+  end repeat
+  return data
+end

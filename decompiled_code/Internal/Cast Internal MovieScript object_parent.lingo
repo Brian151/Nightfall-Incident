@@ -1,0 +1,815 @@
+property my, pId, pSp, pTeam, pType, pMemName, pPos, pState, pBody, pMargin, pStats, pTargetPos, pGroup
+global glob
+
+on new me, myTeam, myType, myMemName, myPos, myBody, cmd, stats, id
+  if glob.count(#sprites) = 0 then
+    exit
+  end if
+  repeat while 1
+    pSp = glob.getProp(#sprites, 1)
+    glob.sprites.deleteAt(1)
+    if not doubleBooked(pSp, me) then
+    else
+    end if
+  end repeat
+  pTeam = myTeam
+  pType = myType
+  pMemName = myMemName
+  pPos = myPos
+  if glob.mode = #play then
+    pState = #hold
+  else
+    pState = #edit
+  end if
+  pBody = myBody
+  overlap = pBody.getOne(pPos)
+  if overlap > 0 then
+    put "moved into body"
+    pBody.deleteAt(overlap)
+  end if
+  pStats = duplicate(stats)
+  if cmd = #open then
+    me.insertObj()
+  end if
+  if pBody.count > 0 and pBody.count = pStats.getAt(#maxSize) then
+    me.looseOldBody()
+  end if
+  if voidp(id) then
+    pId = 0
+  else
+    pId = id
+  end if
+  my = sprite(pSp)
+  puppetSprite(pSp, 1)
+  my.member = member(pMemName)
+  my.blend = 100
+  my.loc = point(1000, 1000)
+  my.ink = 8
+  return me
+end
+
+on idIs me, id
+  pId = id
+end
+
+on insertObj me
+  glob.map_manager.insertObj(pPos, me, pType, #head)
+  flag = 0
+  i = 1
+  repeat while i <= pBody.count
+    if pBody.getAt(i).getAt(1) = pPos then
+      flag = i
+    else
+      repeat while 1
+        newSp = glob.getProp(#sprites, 1)
+        glob.sprites.deleteAt(1)
+        pBody.getAt(i).setAt(2, newSp)
+        if not doubleBooked(newSp, me) then
+        else
+        end if
+      end repeat
+      glob.map_manager.insertObj(pBody.getAt(i).getAt(1), me, pType, #body)
+    end if
+    i = 1 + i
+  end repeat
+  if flag > 0 then
+    pBody.deleteAt(flag)
+  end if
+end
+
+on drawSp me, part, pos
+  pMargin = [136, 2]
+  if part = #head then
+    case pType of
+      #item:
+        my.member = member("item_" & pMemName)
+      #agent:
+        my.member = member(pTeam & "_" & pMemName)
+    end case
+    my.loc = point(pMargin.getAt(1), pMargin.getAt(2)) + point(pPos.getAt(1) - 1 * 32, pPos.getAt(2) - 1 * 32)
+    updateStage()
+  else
+    if part = #body then
+      where = 0
+      j = 1
+      repeat while j <= pBody.count
+        if pBody.getAt(j).getAt(1) = pos then
+          where = j
+        else
+          j = 1 + j
+        end if
+      end repeat
+      if where > 0 then
+        pos = pBody.getAt(where).getAt(1)
+        sp = pBody.getAt(where).getAt(2)
+        link = [0, 0, 0, 0]
+        vX = glob.map_manager.count(#pActMapData)
+        vY = glob.map_manager.getPropRef(#pActMapData, 1).count
+        if pos.getAt(2) > 1 then
+          data = glob.map_manager.returnCell([pos.getAt(1), pos.getAt(2) - 1])
+          pos2 = [[pos.getAt(1), pos.getAt(2) - 1]]
+          if me.checkLink(data, pos2) then
+            link.setAt(1, 1)
+          end if
+        end if
+        if pos.getAt(1) < vX then
+          data = glob.map_manager.returnCell([pos.getAt(1) + 1, pos.getAt(2)])
+          pos2 = [[pos.getAt(1) + 1, pos.getAt(2)]]
+          if me.checkLink(data, pos2) then
+            link.setAt(2, 1)
+          end if
+        end if
+        if pos.getAt(2) < vY then
+          data = glob.map_manager.returnCell([pos.getAt(1), pos.getAt(2) + 1])
+          pos2 = [[pos.getAt(1), pos.getAt(2) + 1]]
+          if me.checkLink(data, pos2) then
+            link.setAt(3, 1)
+          end if
+        end if
+        if pos.getAt(1) > 1 then
+          data = glob.map_manager.returnCell([pos.getAt(1) - 1, pos.getAt(2)])
+          pos2 = [[pos.getAt(1) - 1, pos.getAt(2)]]
+          if me.checkLink(data, pos2) then
+            link.setAt(4, 1)
+          end if
+        end if
+        link = string(link.getAt(1)) & link.getAt(2) & link.getAt(3) & link.getAt(4)
+        puppetSprite(sp, 1)
+        sprite(sp).blend = 100
+        bodyNum = integer(pMemName) mod 10
+        sprite(sp).member = member(pTeam & "_" & bodyNum & "_body_" & link)
+        sprite(sp).loc = point(pMargin.getAt(1), pMargin.getAt(2)) + point(pos.getAt(1) - 1 * 32, pos.getAt(2) - 1 * 32)
+        sprite(sp).locZ = 1000 + sprite(sp).locH + sprite(sp).locV
+        sprite(sp).ink = 8
+      else
+        put "Error, body missing"
+      end if
+      updateStage()
+    end if
+  end if
+end
+
+on checkLink me, data, pos2
+  if not voidp(data) then
+    if data.count(#OBJ) = 0 then
+      return 0
+    else
+      if data.OBJ.type = #item then
+        return 0
+      else
+        if data.OBJ.type = #agent and data.OBJ.pointer.pTeam = pTeam then
+          if data.OBJ.pointer = me then
+            return 1
+          else
+            i = 1
+            repeat while i <= pBody.count
+              pos = pBody.getAt(i).getAt(1)
+              if pos = pos2 then
+                return 1
+              end if
+              i = 1 + i
+            end repeat
+            return 0
+          end if
+        end if
+      end if
+    end if
+  end if
+end
+
+on passData me
+  data = [:]
+  data.setAt(#team, pTeam)
+  data.setAt(#type, pType)
+  data.setAt(#stats, pStats)
+  data.setAt(#mem, pMemName)
+  data.setAt(#pos, pPos)
+  data.setAt(#body, pBody)
+  glob.map_manager.removeObjRef(pPos)
+  return data
+end
+
+on terminate me, part
+  if part = #head then
+    pos = glob.objs.getOne(me)
+    my.loc = point(1000, 1000)
+    puppetSprite(pSp, 0)
+    glob.sprites.add(pSp)
+    i = 1
+    repeat while i <= pBody.count
+      sp = pBody.getAt(i).getAt(2)
+      glob.map_manager.terminateBody(pBody.getAt(i).getAt(1))
+      sprite(pBody.getAt(i).getAt(2)).loc = point(1000, 1000)
+      puppetSprite(pBody.getAt(i).getAt(2), 0)
+      glob.sprites.add(sp)
+      i = 1 + i
+    end repeat
+    glob.objs.deleteAt(pos)
+  else
+    put "Terminate body"
+  end if
+end
+
+on addAction me, data
+  pStats.Actions.add(data)
+end
+
+on removeAction me, tLine
+  pStats.Actions.deleteAt(tLine)
+end
+
+on moveAgent me, dir, newPos, click
+  if pStats.Movement = 0 then
+    pState = #action
+  end if
+  if pState = #move then
+    if pTeam = #player then
+      SndSFX("snd_move_player")
+    else
+      SndSFX("snd_move_com")
+    end if
+    repeat while 1
+      newSp = glob.getProp(#sprites, 1)
+      glob.sprites.deleteAt(1)
+      pBody.add([pPos, newSp])
+      if not doubleBooked(newSp, me) then
+      else
+      end if
+    end repeat
+    pStats.MoveCount = pStats.MoveCount - 1
+    glob.map_manager.moveItemInPlay(pPos, newPos, click)
+  else
+    if pState = #action then
+      pStats.MoveCount = pStats.Movement
+      actionData = glob.ai_manager.reportActionStuff(me)
+      requiredSize = actionData.getAt(1).requiredSize
+      if requiredSize > 0 then
+        myBodySize = pBody.count + 1
+        diff = myBodySize - requiredSize
+        if diff < 0 then
+          me.actionDone()
+          exit
+        end if
+      end if
+      if pTeam = #com then
+        temp = me.bestTarget(newPos)
+        if not voidp(temp) then
+          newPos = temp
+        end if
+      end if
+      glob.targetRange.moveLoc([2000, 100])
+      glob.targetLock.showTargetLock(newPos)
+      pTargetPos = newPos
+      me.exeAction(glob.infoManager.pActionPos)
+    else
+    end if
+  end if
+  if glob.gotWinFlag then
+    glob.game_manager.reportBattleEnd(#player)
+  end if
+end
+
+on bestTarget me, newPos
+  actionData = glob.ai_manager.reportActionStuff(me)
+  force = actionData.getAt(1).damage
+  attackRange = actionData.getAt(1).range
+  if attackRange > 1 then
+    return newPos
+  end if
+  pos = glob.infoManager.pActionPos
+  if pos > pStats.count(#Actions) then
+    pos = 1
+  end if
+  action = pStats.getProp(#Actions, pos)
+  cmdData = glob.cmd_manager.actionDesc(action)
+  if cmdData.type = "attack" then
+    limitXY = [glob.map_manager.getProp(#pActMapSize, 1), glob.map_manager.getProp(#pActMapSize, 2)]
+    dmg = 100
+    if pPos.getAt(1) > 1 then
+      sPos = [pPos.getAt(1) - 1, pPos.getAt(2)]
+      data = glob.map_manager.returnCell(sPos)
+      if glob.targetRange.evaluateData(data) then
+        hit = data.OBJ.pointer.count(#pBody) - force
+        if hit < dmg then
+          newTargetPos = sPos
+          dmg = hit
+        end if
+      end if
+    end if
+    if pPos.getAt(1) < limitXY.getAt(1) then
+      sPos = [pPos.getAt(1) + 1, pPos.getAt(2)]
+      data = glob.map_manager.returnCell(sPos)
+      if glob.targetRange.evaluateData(data) then
+        hit = data.OBJ.pointer.count(#pBody) - force
+        if hit < dmg then
+          newTargetPos = sPos
+          dmg = hit
+        end if
+      end if
+    end if
+    if pPos.getAt(2) > 1 then
+      sPos = [pPos.getAt(1), pPos.getAt(2) - 1]
+      data = glob.map_manager.returnCell(sPos)
+      if glob.targetRange.evaluateData(data) then
+        hit = data.OBJ.pointer.count(#pBody) - force
+        if hit < dmg then
+          newTargetPos = sPos
+          dmg = hit
+        end if
+      end if
+    end if
+    if pPos.getAt(2) < limitXY.getAt(2) then
+      sPos = [pPos.getAt(1), pPos.getAt(2) + 1]
+      data = glob.map_manager.returnCell(sPos)
+      if glob.targetRange.evaluateData(data) then
+        hit = data.OBJ.pointer.count(#pBody) - force
+        if hit < dmg then
+          newTargetPos = sPos
+          dmg = hit
+        end if
+      end if
+    end if
+    return newTargetPos
+  else
+    return newPos
+  end if
+end
+
+on actionDone me
+  if not pTeam = glob.game_manager.pTurn then
+    exit
+  end if
+  pStats.MoveCount = pStats.Movement
+  glob.targetRange.moveLoc([2000, 100])
+  glob.mapBoardObj.cleatActAgent()
+  pState = #hold
+  glob.targetLock.hideTargetLock()
+  glob.game_manager.addFinishedAgent(pId, pTeam, pSp)
+end
+
+on cmdAllowed me, pos
+  if voidp(pos) then
+    return 0
+  end if
+  action = pStats.getProp(#Actions, pos)
+  cmdData = glob.cmd_manager.actionDesc(action)
+  if cmdData.requiredSize > 0 and pBody.count + 1 < cmdData.requiredSize then
+    return 0
+  else
+    return 1
+  end if
+end
+
+on exeAction me, pos
+  if voidp(pos) then
+    exit
+  end if
+  if pos > pStats.count(#Actions) then
+    pos = 1
+  end if
+  action = pStats.getProp(#Actions, pos)
+  cmdData = glob.cmd_manager.actionDesc(action)
+  if cmdData.requiredSize > 0 and pBody.count + 1 < cmdData.requiredSize then
+    me.actionDone()
+  else
+    if not cmdData.cost = #infinity and cmdData.cost > 0 and pBody.count + 1 < cmdData.cost then
+      me.actionDone()
+    else
+      cType = symbol(cmdData.type)
+      tempLoc = sprite(pSp).loc + point(16, 16)
+      case cType of
+        #attack:
+          if cmdData.damage = #max then
+            dmg = 100
+          else
+            if cmdData.damage = #bodysize then
+              dmg = pBody.count + 1
+            else
+              dmg = cmdData.damage
+            end if
+          end if
+          if cmdData.areaOfEffect = #bodyaura then
+            objs = me.doBodyAura(#target)
+            baFlag = 0
+            ba = 1
+            repeat while ba <= objs.count
+              OBJ = objs.getAt(ba)
+              if OBJ.pType = #item then
+              else
+                if OBJ.pTeam = #player then
+                  baFlag = 1
+                else
+                  if OBJ.pTeam = #com then
+                    baFlag = 1
+                  else
+                    ba = 1 + ba
+                  end if
+                  if baFlag then
+                    k = 1
+                    repeat while k <= objs.count
+                      objs.getAt(k).upderAttack(dmg)
+                      k = 1 + k
+                    end repeat
+                  end if
+                  glob.map_manager.attackCell(pTargetPos, dmg)
+                  me.payCost(cmdData)
+                  glob.checkMarks.showMark(sprite(pSp).loc)
+                  glob.game_manager.addFinishedAgent(pId, pTeam, pSp)
+                  case ERROR of
+                    #grow:
+                      if cmdData.grow = #max then
+                        grow = 100
+                      else
+                        grow = cmdData.grow
+                      end if
+                      SndSFX("snd_grow")
+                      glob.map_manager.growCell(pTargetPos, grow)
+                      me.payCost(cmdData)
+                      glob.game_manager.addFinishedAgent(pId, pTeam, pSp)
+                    #grid:
+                      x = pTargetPos.getAt(1)
+                      y = pTargetPos.getAt(2)
+                      cell = glob.map_manager.getPropRef(#pActMapData, x).getAt(y)
+                      click = glob.map_manager.mapClickPosToLoc(x, y)
+                      particleLoc = point(click.getAt(1), click.getAt(2)) + point(16, 16)
+                      SndSFX("snd_fix_grid")
+                      if cmdData.defreg = #on and cell.BKG = "tx0" then
+                        cell.BKG = "tx1"
+                        particleType = #grid_1
+                      else
+                        if cmdData.frag = #on then
+                          cell.BKG = "tx0"
+                          particleType = #grid_2
+                        end if
+                      end if
+                      glob.map_manager.drawMap()
+                      glob.game_manager.addFinishedAgent(pId, pTeam, pSp)
+                      updateStage()
+                      if not voidp(particleType) then
+                        glob.particle.doit(particleLoc, particleType)
+                      end if
+                    #sizeMod:
+                      if integerp(cmdData.sizeMod.maxSizeChange) then
+                        change = cmdData.sizeMod.maxSizeChange
+                        glob.map_manager.modCell(pTargetPos, #sizeMod, change)
+                        SndSFX("snd_size")
+                        me.payCost(cmdData)
+                        glob.game_manager.addFinishedAgent(pId, pTeam, pSp)
+                      end if
+                      updateStage()
+                    #speedMod:
+                      if integerp(cmdData.speedMod.speedChange) then
+                        change = cmdData.speedMod.speedChange
+                        glob.map_manager.modCell(pTargetPos, #speedMod, change)
+                        SndSFX("snd_speed")
+                        me.payCost(cmdData)
+                        glob.game_manager.addFinishedAgent(pId, pTeam, pSp)
+                      end if
+                      updateStage()
+                  end case
+                  glob.mapBoardObj.cleatActAgent()
+                  pState = #hold
+                  glob.targetLock.hideTargetLock()
+                end if
+              end if
+            end repeat
+          end if
+      end case
+    end if
+  end if
+end
+
+on doBodyAura me, mode
+  temp = []
+  pos = pPos
+  x = pos.getAt(1)
+  y = pos.getAt(2) - 1
+  data = me.cleanAdd(x, y, temp, mode)
+  if not voidp(data) then
+    temp.add(data)
+  end if
+  x = pos.getAt(1)
+  y = pos.getAt(2) + 1
+  data = me.cleanAdd(x, y, temp, mode)
+  if not voidp(data) then
+    temp.add(data)
+  end if
+  x = pos.getAt(1) - 1
+  y = pos.getAt(2)
+  data = me.cleanAdd(x, y, temp, mode)
+  if not voidp(data) then
+    temp.add(data)
+  end if
+  x = pos.getAt(1) + 1
+  y = pos.getAt(2)
+  data = me.cleanAdd(x, y, temp, mode)
+  if not voidp(data) then
+    temp.add(data)
+  end if
+  i = 1
+  repeat while i <= pBody.count
+    pos = pBody.getAt(i).getAt(1)
+    x = pos.getAt(1)
+    y = pos.getAt(2) - 1
+    data = me.cleanAdd(x, y, temp, mode)
+    if not voidp(data) then
+      temp.add(data)
+    end if
+    x = pos.getAt(1)
+    y = pos.getAt(2) + 1
+    data = me.cleanAdd(x, y, temp, mode)
+    if not voidp(data) then
+      temp.add(data)
+    end if
+    x = pos.getAt(1) - 1
+    y = pos.getAt(2)
+    data = me.cleanAdd(x, y, temp, mode)
+    if not voidp(data) then
+      temp.add(data)
+    end if
+    x = pos.getAt(1) + 1
+    y = pos.getAt(2)
+    data = me.cleanAdd(x, y, temp, mode)
+    if not voidp(data) then
+      temp.add(data)
+    end if
+    i = 1 + i
+  end repeat
+  return temp
+end
+
+on cleanAdd me, x, y, temp, mode
+  if x < 1 or x > glob.map_manager.getProp(#pActMapSize, 1) or y < 1 or y > glob.map_manager.getProp(#pActMapSize, 2) then
+  else
+    data = glob.map_manager.returnCell([x, y])
+    if voidp(data) then
+    else
+      if data.count(#OBJ) = 0 then
+        if mode = #empty and getOne(temp, [x, y]) = 0 then
+          sendThis = [x, y]
+        end if
+      else
+        if data.count(#OBJ) > 0 and mode = #target then
+          if getOne(temp, data.OBJ.pointer) = 0 and not me = data.OBJ.pointer then
+            sendThis = data.OBJ.pointer
+          end if
+        end if
+      end if
+    end if
+  end if
+  return sendThis
+end
+
+on payCost me, cmdData
+  if cmdData.cost = #infinity then
+    me.upderAttack(100)
+  else
+    if cmdData.cost > 0 then
+      me.upderAttack(cmdData.cost)
+    end if
+  end if
+end
+
+on looseOldBody me
+  puppetSprite(pBody.getAt(1).getAt(2), 0)
+  oldBodySp = pBody.getAt(1).getAt(2)
+  glob.map_manager.terminateBody(pBody.getAt(1).getAt(1))
+  pBody.deleteAt(1)
+  glob.sprites.add(oldBodySp)
+end
+
+on destroyAnim me
+  who = sprite(pBody.getAt(1).getAt(2))
+  x = 1
+  repeat while x <= 3
+    who.rect = who.rect + rect(1, 1, -1, -1)
+    who.blend = who.blend - 10
+    delayTime(10)
+    updateStage()
+    x = 1 + x
+  end repeat
+  y = 1
+  repeat while y <= 7
+    who.rect = who.rect + rect(-1, -1, 1, 1)
+    who.blend = who.blend - 10
+    delayTime(10)
+    updateStage()
+    y = 1 + y
+  end repeat
+end
+
+on upderAttack me, force
+  temp = sprite(pSp).loc + point(16, 16)
+  glob.particle.doit(temp, #attack)
+  i = 1
+  repeat while i <= force
+    if pBody.count > 0 then
+      me.destroyAnim()
+      me.looseOldBody()
+    else
+      glob.map_manager.terminateCell(pPos)
+      i = 1 + i
+    end if
+  end repeat
+  me.removeLoners()
+end
+
+on growBody me, amount
+  objs = me.doBodyAura(#empty)
+  tempLoc = sprite(pSp).loc + point(16, 16)
+  i = 1
+  repeat while i <= amount
+    if i > objs.count then
+      exit
+    end if
+    repeat while 1
+      sp = glob.getProp(#sprites, 1)
+      glob.sprites.deleteAt(1)
+      newBody = [objs.getAt(i), sp]
+      if not doubleBooked(sp, me) then
+      else
+      end if
+    end repeat
+    glob.map_manager.insertObj(newBody.getAt(1), me, pType, #body)
+    pBody.add(newBody)
+    glob.map_manager.drawMap()
+    glob.particle.doit(tempLoc, #grow)
+    updateStage()
+    i = 1 + i
+  end repeat
+end
+
+on modAgent me, modType, amount, pos
+  tempLoc = sprite(pSp).loc + point(16, 16)
+  case modType of
+    #speedMod:
+      glob.particle.doit(tempLoc, #speed)
+      pStats.Movement = pStats.Movement + amount
+      pStats.MoveCount = pStats.MoveCount + amount
+      if pStats.Movement < 0 then
+        pStats.Movement = 0
+        pStats.MoveCount = 0
+      else
+        if pStats.Movement > 10 then
+          pStats.Movement = 10
+          pStats.MoveCount = 10
+        end if
+      end if
+    #sizeMod:
+      pStats.maxSize = pStats.maxSize + amount
+      glob.particle.doit(tempLoc, #size)
+  end case
+end
+
+on changeState me, state
+  if pStats.Movement = 0 and state = #move then
+    pState = #action
+  else
+    pState = state
+  end if
+end
+
+on resetStats me
+  pState = #hold
+end
+
+on checkState me
+  if pStats.Movement > 0 and pStats.MoveCount < 1 and not pState = #action then
+    pState = #action
+    glob.infoManager.actionSelected(1)
+  end if
+  return pState
+end
+
+on moveDone me, click
+  pStats.MoveCount = 0
+  me.checkState()
+end
+
+on changeTeam me, team
+  pTeam = team
+  glob.map_manager.drawMap()
+end
+
+on undoMove me, data, clicked
+  i = 1
+  repeat while i <= pBody.count
+    if getOne(data.body, pBody.getAt(i)) = 0 then
+      sp = pBody.getAt(i).getAt(2)
+      glob.map_manager.terminateBody(pBody.getAt(i).getAt(1))
+      sprite(sp).loc = point(1000, 1000)
+      puppetSprite(sp, 0)
+      glob.sprites.add(sp)
+    end if
+    i = 1 + i
+  end repeat
+  pBody = data.body
+  pStats.MoveCount = pStats.Movement
+  glob.map_manager.moveItemInPlay(pPos, data.pos, data.click, clicked)
+end
+
+on removeLoners me
+  temp = []
+  temp.add([pPos])
+  i = 1
+  repeat while i <= pBody.count
+    pos = pBody.getAt(i).getAt(1)
+    m = 1
+    repeat while m <= temp.count
+      if temp.getAt(m).getAt(1).getOne(pos) then
+        thisPos = m
+      else
+        m = 1 + m
+      end if
+    end repeat
+    if voidp(thisPos) then
+      temp.add([pPos])
+      thisPos = temp.count
+    end if
+    box = []
+    box.add(pos)
+    limitXY = glob.map_manager.pActMapSize
+    if pos.getAt(1) > 1 then
+      sPos = [pos.getAt(1) - 1, pos.getAt(2)]
+      box.add(sPos)
+    end if
+    if pos.getAt(1) < limitXY.getAt(1) then
+      sPos = [pos.getAt(1) + 1, pos.getAt(2)]
+      box.add(sPos)
+    end if
+    if pos.getAt(2) > 1 then
+      sPos = [pos.getAt(1), pos.getAt(2) - 1]
+      box.add(sPos)
+    end if
+    if pos.getAt(2) < limitXY.getAt(2) then
+      sPos = [pos.getAt(1), pos.getAt(2) + 1]
+      box.add(sPos)
+    end if
+    j = 1
+    repeat while j <= pBody.count
+      if i = j then
+      else
+        if box.getOne(pBody.getAt(j).getAt(1)) > 0 then
+          temp.getAt(thisPos).add(pBody.getAt(j).getAt(1))
+        end if
+      end if
+      j = 1 + j
+    end repeat
+    i = 1 + i
+  end repeat
+  if temp.count <= 1 then
+    exit
+  end if
+  ii = 1
+  repeat while ii <= temp.count
+    if getOne(temp.getAt(ii), pPos) = 0 then
+      kk = 1
+      repeat while kk <= temp.getAt(ii).count
+        pos = temp.getAt(ii).getAt(kk)
+        jj = pBody.count
+        repeat while jj >= 1
+          if pBody.getAt(jj).getAt(1) = pos then
+            pBody.deleteAt(jj)
+          else
+            jj = 65535 + jj
+          end if
+        end repeat
+        kk = 1 + kk
+      end repeat
+    end if
+    ii = 1 + ii
+  end repeat
+end
+
+on loopFrame me
+  if pBody.count = pStats.maxSize - 1 and not pBody.count = 0 then
+    if glob.game_manager.pTurn = #player and pTeam = #com then
+      exit
+    end if
+    if pState = #move then
+      if sprite(pBody.getAt(1).getAt(2)).blend = 100 then
+        sprite(pBody.getAt(1).getAt(2)).blend = 0
+      else
+        sprite(pBody.getAt(1).getAt(2)).blend = 100
+      end if
+    else
+      sprite(pBody.getAt(1).getAt(2)).blend = 100
+    end if
+  end if
+  me.checkState()
+  me.checkSpriteVis()
+end
+
+on checkSpriteVis me
+  if sprite(pSp).visible = 0 then
+    sprite(pSp).visible = 1
+  end if
+  i = 1
+  repeat while i <= pBody.count
+    if sprite(pBody.getAt(i).getAt(2)).visible = 0 then
+      sprite(pBody.getAt(i).getAt(2)).visible = 1
+    end if
+    i = 1 + i
+  end repeat
+  updateStage()
+end

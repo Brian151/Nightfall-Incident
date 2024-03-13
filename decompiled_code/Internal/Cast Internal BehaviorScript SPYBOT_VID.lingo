@@ -1,0 +1,36 @@
+property my, pCount, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#spybotVid, me)
+  pState = #hide
+  my = sprite(me.spriteNum)
+  my.visible = 0
+  sprite(me.spriteNum - 1).visible = 0
+  sprite(me.spriteNum - 2).visible = 0
+end
+
+on exitFrame me
+end
+
+on show me
+  if pState = #show then
+    exit
+  end if
+  pState = #show
+  pCount = 0
+  my.visible = 1
+  sprite(me.spriteNum - 1).visible = 1
+  sprite(me.spriteNum - 1).member = member("spybot" & glob.SPYBOT & "_anim")
+  updateStage()
+  i = 1
+  repeat while i <= 30
+    delayTime(50)
+    updateStage()
+    i = 1 + i
+  end repeat
+  glob.worldMap_manager.storeLoc()
+  sndMusicStop()
+  glob.door.close()
+  SndSFX("s.grow", 0, 255, -12)
+end

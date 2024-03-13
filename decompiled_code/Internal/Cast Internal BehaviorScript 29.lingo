@@ -1,0 +1,5 @@
+global glob
+
+on mouseDown me
+  glob.setAt(#mode, #edit)
+end

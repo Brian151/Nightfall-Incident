@@ -1,0 +1,38 @@
+property sp, pLoc, pFlag, pState
+global glob
+
+on beginSprite me
+  glob.setAt(#playerPrograms, me)
+  sp = me.spriteNum
+  pState = #hide
+end
+
+on show me
+  if pState = #show then
+    exit
+  end if
+  pState = #show
+  i = 0
+  repeat while i <= 4
+    sprite(sp + i).locH = sprite(sp + i).locH + 150
+    i = 1 + i
+  end repeat
+  updateStage()
+  glob.spybotOnMap.hide()
+  glob.infoManager.show()
+end
+
+on hide me
+  if pState = #hide then
+    exit
+  end if
+  pState = #hide
+  i = 0
+  repeat while i <= 4
+    sprite(sp + i).locH = sprite(sp + i).locH - 150
+    i = 1 + i
+  end repeat
+  updateStage()
+  glob.spybotOnMap.show()
+  glob.infoManager.hide()
+end

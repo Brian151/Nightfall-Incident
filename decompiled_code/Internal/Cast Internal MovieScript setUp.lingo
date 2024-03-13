@@ -1,0 +1,195 @@
+global glob
+
+on startMovie
+end
+
+on doStartMovie
+  clearGlobals()
+  glob = [:]
+  glob.setAt(#authorMode, 0)
+  glob.setAt(#playMode, #play)
+  initSound()
+  if glob.getAt(#playMode) = #DEV then
+    SndSetMusicVolume(0)
+    SndSetSFXVolume(0)
+  end if
+  glob.setAt(#mapdata, [])
+  glob.setAt(#file_manager, new(script("file_manager")))
+  glob.setAt(#map_manager, new(script("map_manager")))
+  glob.setAt(#cmd_manager, new(script("cmd_manager")))
+  glob.setAt(#item_manager, new(script("item_manager")))
+  glob.setAt(#agent_manager, new(script("agent_manager")))
+  glob.setAt(#worldMap_manager, new(script("worldMap_manager")))
+  playerAgentsList = value(member("playerAgents").text)
+  glob.setAt(#player_manager, new(script("player_manager"), playerAgentsList))
+  glob.setAt(#dialogue_manager, new(script("dialogue_manager"), playerAgentsList))
+  glob.setAt(#objs, [])
+  temp = cleanWhitespace(member("world_data").text)
+  glob.setAt(#WorldData, value(temp))
+  temp = cleanWhitespace(member("warez_inventory_list").text)
+  glob.setAt(#wareInventory, value(temp))
+  glob.setAt(#credits, 1000)
+  glob.setAt(#sLevel, 1)
+  glob.setAt(#personals, value(member("ch_names").text))
+  glob.setAt(#companyNames, value(member("company_names").text))
+  glob.setAt(#warezIntroFlags, [])
+  glob.setAt(#restore, [:])
+  member("spritetrace").text = ""
+  buildAniFrames()
+  spBank()
+  go("ready")
+end
+
+on stopMovie me
+  SndFixCastLibraries()
+end
+
+on keyDown
+  if glob.getAt(#playMode) = #play then
+    exit
+  end if
+  if the frameLabel = "play" then
+    glob.mapBoardObj.keyShortCut(the key)
+  else
+    glob.map_manager.mapEdit(the key)
+  end if
+end
+
+on spBank
+  glob.setAt(#sprites, [])
+  i = 500
+  repeat while i <= 1000
+    glob.sprites.add(i)
+    sprite(i).loc = point(1000, 1000)
+    puppetSprite(i, 0)
+    i = 1 + i
+  end repeat
+end
+
+on buildAniFrames me
+  glob.setAt(#aniFrames, [:])
+end
+
+on cleanWhitespace t
+  repeat while offset(numToChar(10), t) > 0
+  end repeat
+  repeat while offset(numToChar(13), t) > 0
+  end repeat
+  return t
+end
+
+on delayTime t
+  Start = the milliSeconds
+  repeat while the milliSeconds < Start + t
+    SndCheckPlaylist()
+  end repeat
+end
+
+on delayCheck
+  if glob.delayTime then
+    if the millisecond < glob.delayInfo then
+      glob.setAt(#delayTime, 0)
+    end if
+  end if
+end
+
+on Distance p1, p2
+  dist = sqrt(power(p1.getAt(1) - p2.getAt(1), 2) + power(p1.getAt(2) - p2.getAt(2), 2))
+  return dist
+end
+
+on GetAngle slope
+  deltaH = slope.getAt(1)
+  deltaV = slope.getAt(2)
+  if deltaH then
+    slope = float(deltaV) / deltaH
+    Angle = atan(slope)
+    if deltaH < 0 then
+      Angle = Angle + PI
+    end if
+  else
+    if deltaV > 0 then
+      Angle = PI / 2
+    else
+      if deltaV < 0 then
+        Angle = 3 * PI / 2
+      else
+        Angle = 0
+      end if
+    end if
+  end if
+  Angle = Angle * 180 / PI + 360 mod 360
+  return Angle
+end
+
+on GetVx Angle, speed
+  r = Angle + 90 * PI / 180
+  x = speed * sin(r)
+  return x
+end
+
+on GetVy Angle, speed
+  r = Angle - 90 * PI / 180
+  y = speed * cos(r)
+  return y
+end
+
+on checkIlk
+  i = 1
+  repeat while i <= 49
+    temp = cleanWhitespace(member("node_" & i & "_dialogue").text)
+    pDataText = value(temp)
+    put "node_" & i & "_dialogue:" & ilk(pDataText)
+    i = 1 + i
+  end repeat
+end
+
+on ilknode
+  temp = cleanWhitespace(member("nodes_logic").text)
+  glob.setAt(#nodesLogic, value(temp))
+  put ilk(glob.getAt(#nodesLogic))
+end
+
+on changeRegPoint startNum, endNum, regPointz
+  i = startNum
+  repeat while i <= endNum
+    member(i, "tiles").regPoint = regPointz
+    i = 1 + i
+  end repeat
+end
+
+on doubleBooked snum, meObj
+  i = 1
+  repeat while i <= glob.count(#objs)
+    OBJ = glob.getProp(#objs, i)
+    if OBJ = meObj then
+    else
+      if OBJ.pType = #agent then
+        if snum = OBJ.pSp then
+          return 1
+        else
+          m = 1
+          repeat while m <= OBJ.count(#pBody)
+            bodySp = OBJ.getPropRef(#pBody, m).getAt(2)
+            if snum = bodySp then
+              return 1
+            end if
+            m = 1 + m
+          end repeat
+        end if
+        exit repeat
+      end if
+      if OBJ.pType = #item then
+        if snum = OBJ.pSp then
+          return 1
+        end if
+      end if
+    end if
+    i = 1 + i
+  end repeat
+  return 0
+end
+
+on introTitleReady
+  go("start")
+end

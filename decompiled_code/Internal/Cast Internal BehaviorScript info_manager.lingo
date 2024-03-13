@@ -1,0 +1,305 @@
+property my, pActAgent, pActionPos, pFlag, pSpyBotCmd, pCmdCount, pRealPos
+global glob
+
+on beginSprite me
+  glob.setAt(#infoManager, me)
+  pActAgent = 0
+  pActionPos = 1
+  pSpyBotCmd = #off
+  my = sprite(me.spriteNum)
+  my.member.text = ""
+end
+
+on enterFrame me
+end
+
+on spyBotCmd me, state
+  pSpyBotCmd = state
+end
+
+on exitFrame me
+  if the frameLabel = "play" then
+    agents = glob.player_manager.pAgents
+    grouped = glob.player_manager.pGrouped
+    listPos = glob.player_manager.pActAgent
+    realPos = 0
+    if listPos > 0 then
+      tempName = grouped.getAt(listPos).name
+      j = 1
+      repeat while j <= agents.count
+        if agents.getAt(j).name = tempName then
+          realPos = j
+        else
+          j = 1 + j
+        end if
+      end repeat
+    end if
+    if glob.mapBoardObj.pActAgent = 0 then
+      if realPos = 0 then
+        pRealPos = 0
+        pActAgent = 0
+        me.hideObjInfo()
+      else
+        if not pActAgent = realPos and not pRealPos = realPos then
+          pRealPos = realPos
+          pActAgent = glob.player_manager.getProp(#pAgents, realPos)
+          me.showObjInfo(pActAgent, #list)
+        end if
+      end if
+    else
+      if not pActAgent = glob.mapBoardObj.pActAgent.OBJ then
+        pRealPos = 0
+        pActAgent = glob.mapBoardObj.pActAgent.OBJ
+        me.showObjInfo(pActAgent.pStats)
+      end if
+    end if
+  end if
+end
+
+on showSpybotCmd me, data
+  member("objInfoCmdLabel").text = "COMMANDS"
+  member("objInfoName").text = data.NAMETEXT
+  member("objInfoBoxX").text = ""
+  member("objInfoBoxX").fontStyle = [#plain]
+  member("cmd_list_button_text_1").text = data.action
+  sprite(me.spriteNum + 1).blend = 100
+  sprite(me.spriteNum + 1).member = member("spybot_" & data.icon)
+  member("actionDesc").text = data.description
+end
+
+on hideObjInfo me
+  member("objInfoName").text = ""
+  member("objInfoBoxX").text = ""
+  member("cmd_list_button_text_1").text = ""
+  member("cmd_list_button_text_2").text = ""
+  member("cmd_list_button_text_3").text = ""
+  member("objInfoCmdLabel").text = ""
+  member("actionDesc").text = ""
+  sprite(me.spriteNum + 1).blend = 0
+end
+
+on showObjInfo me, data, cmd
+  if voidp(cmd) then
+    if pActAgent.pType = #item then
+      if pActAgent.pStats.type = #DOCK then
+        glob.tutorialPointer.pointProgramList()
+      end if
+      member("objInfoCmdLabel").text = ""
+      itemData = glob.item_manager.passItemDesc(data.name)
+      member("objInfoName").text = itemData.NAMETEXT
+      member("objInfoBoxX").text = ""
+      member("objInfoBoxX").fontStyle = [#plain]
+      member("cmd_list_button_text_1").text = ""
+      member("cmd_list_button_text_2").text = ""
+      member("cmd_list_button_text_3").text = ""
+      sprite(me.spriteNum + 1).blend = 100
+      sprite(me.spriteNum + 1).member = member("item_" & pActAgent.pMemName)
+      member("actionDesc").text = itemData.description
+    else
+      member("objInfoCmdLabel").text = "COMMANDS"
+      agentData = glob.agent_manager.passAgentDesc(data.name)
+      member("objInfoName").text = agentData.NAMETEXT
+      if data.Movement = 10 then
+        maxSign = "(Max)"
+      else
+        maxSign = ""
+      end if
+      member("objInfoBoxX").text = "Move:" & data.Movement & maxSign & RETURN & "Max Size:" & data.maxSize & RETURN & "Current Size:" & pActAgent.count(#pBody) + 1
+      member("objInfoBoxX").fontStyle = [#plain]
+      pCmdCount = data.count(#Actions)
+      if pCmdCount = 0 then
+        member("cmd_list_button_text_1").text = member("cmd_list_button_text_no_action").text
+        member("cmd_list_button_text_2").text = ""
+        member("cmd_list_button_text_3").text = ""
+      else
+        temp = ""
+        i = 1
+        repeat while i <= data.count(#Actions)
+          tName = data.getProp(#Actions, i)
+          tInfo = glob.cmd_manager.actionDesc(tName)
+          if tInfo.requiredSize > 0 then
+            req = " (" & tInfo.requiredSize & ")"
+          else
+            req = ""
+          end if
+          temp = tInfo.NAMETEXT & req
+          member("cmd_list_button_text_" & i).text = temp
+          i = 1 + i
+        end repeat
+      end if
+      case pCmdCount of
+        0:
+          sprite(me.spriteNum + 2).member = member("but_command_noAct")
+          sprite(me.spriteNum + 3).member = member("but_command_noAct")
+          sprite(me.spriteNum + 4).member = member("but_command_noAct")
+          if glob.mapBoardObj.pActAgent.OBJ.pTeam = #player then
+            sprite(me.spriteNum + 2).visible = 1
+            member("cmd_list_button_text_1").text = member("cmd_list_button_text_no_action").text
+          else
+            sprite(me.spriteNum + 2).visible = 0
+            member("cmd_list_button_text_1").text = ""
+          end if
+          sprite(me.spriteNum + 3).visible = 0
+          sprite(me.spriteNum + 4).visible = 0
+          member("cmd_list_button_text_2").text = ""
+          member("cmd_list_button_text_3").text = ""
+        1:
+          sprite(me.spriteNum + 2).member = member("but_command_go")
+          sprite(me.spriteNum + 3).member = member("but_command_noAct")
+          sprite(me.spriteNum + 4).member = member("but_command_noAct")
+          sprite(me.spriteNum + 2).visible = 1
+          if glob.mapBoardObj.pActAgent.OBJ.pTeam = #player then
+            sprite(me.spriteNum + 3).visible = 1
+            member("cmd_list_button_text_2").text = member("cmd_list_button_text_no_action").text
+          else
+            sprite(me.spriteNum + 3).visible = 0
+            member("cmd_list_button_text_2").text = ""
+          end if
+          sprite(me.spriteNum + 4).visible = 0
+          member("cmd_list_button_text_3").text = ""
+        2:
+          sprite(me.spriteNum + 2).member = member("but_command_go")
+          sprite(me.spriteNum + 3).member = member("but_command_go")
+          sprite(me.spriteNum + 4).member = member("but_command_noAct")
+          sprite(me.spriteNum + 2).visible = 1
+          sprite(me.spriteNum + 3).visible = 1
+          if glob.mapBoardObj.pActAgent.OBJ.pTeam = #player then
+            sprite(me.spriteNum + 4).visible = 1
+            member("cmd_list_button_text_3").text = member("cmd_list_button_text_no_action").text
+          else
+            sprite(me.spriteNum + 4).visible = 0
+            member("cmd_list_button_text_3").text = ""
+          end if
+          member("cmd_list_button_text_3").text = member("cmd_list_button_text_no_action").text
+      end case
+      member("moveCount").text = string(data.MoveCount)
+      member("actionDesc").text = data.description
+      sprite(me.spriteNum + 1).blend = 100
+      sprite(me.spriteNum + 1).member = member(pActAgent.pTeam & "_" & pActAgent.pMemName)
+    end if
+  else
+    member("objInfoCmdLabel").text = "COMMANDS"
+    agentData = glob.agent_manager.passAgentDesc(data.name)
+    member("objInfoName").text = agentData.NAMETEXT
+    if data.Movement = 10 then
+      maxSign = "(Max)"
+    else
+      maxSign = ""
+    end if
+    member("objInfoBoxX").text = "Move:" & data.Movement & maxSign & RETURN & "Max Size:" & data.maxSize
+    member("objInfoBoxX").fontStyle = [#plain]
+    pCmdCount = data.count(#Actions)
+    if pCmdCount = 0 then
+      member("cmd_list_button_text_1").text = member("cmd_list_button_text_no_action").text
+      member("cmd_list_button_text_2").text = ""
+      member("cmd_list_button_text_3").text = ""
+    else
+      temp = ""
+      i = 1
+      repeat while i <= data.count(#Actions)
+        tName = data.getProp(#Actions, i)
+        tInfo = glob.cmd_manager.actionDesc(tName)
+        if tInfo.requiredSize > 0 then
+          req = " (" & tInfo.requiredSize & ")"
+        else
+          req = ""
+        end if
+        temp = tInfo.NAMETEXT & req
+        member("cmd_list_button_text_" & i).text = temp
+        i = 1 + i
+      end repeat
+    end if
+    case pCmdCount of
+      0:
+        sprite(me.spriteNum + 2).member = member("but_command_noAct")
+        sprite(me.spriteNum + 3).member = member("but_command_noAct")
+        sprite(me.spriteNum + 4).member = member("but_command_noAct")
+        sprite(me.spriteNum + 2).visible = 1
+        sprite(me.spriteNum + 3).visible = 0
+        sprite(me.spriteNum + 4).visible = 0
+        member("cmd_list_button_text_1").text = ""
+        member("cmd_list_button_text_2").text = ""
+        member("cmd_list_button_text_3").text = ""
+      1:
+        sprite(me.spriteNum + 2).member = member("but_command_go")
+        sprite(me.spriteNum + 3).member = member("but_command_noAct")
+        sprite(me.spriteNum + 4).member = member("but_command_noAct")
+        sprite(me.spriteNum + 2).visible = 1
+        sprite(me.spriteNum + 3).visible = 0
+        sprite(me.spriteNum + 4).visible = 0
+        member("cmd_list_button_text_2").text = ""
+        member("cmd_list_button_text_3").text = ""
+      2:
+        sprite(me.spriteNum + 2).member = member("but_command_go")
+        sprite(me.spriteNum + 3).member = member("but_command_go")
+        sprite(me.spriteNum + 4).member = member("but_command_noAct")
+        sprite(me.spriteNum + 2).visible = 1
+        sprite(me.spriteNum + 3).visible = 1
+        sprite(me.spriteNum + 4).visible = 0
+        member("cmd_list_button_text_3").text = ""
+    end case
+    member("moveCount").text = string(data.MoveCount)
+    member("actionDesc").text = data.description
+    sprite(me.spriteNum + 1).blend = 100
+    sprite(me.spriteNum + 1).member = member("player_" & pActAgent.icon)
+  end if
+end
+
+on actionSelected me, snum
+  tLine = snum - me.spriteNum - 1
+  if pCmdCount < tLine and glob.game_manager.pTurn = #player then
+    if glob.mapBoardObj.pActAgent.OBJ.pTeam = #player then
+      if glob.game_manager.pState = #BATTLE then
+        glob.mapBoardObj.actionDone()
+      end if
+      exit
+    else
+      exit
+    end if
+  end if
+  if voidp(pActAgent) or pActAgent = 0 or tLine < 1 then
+    exit
+  end if
+  if glob.infoManager.pSpyBotCmd = #on then
+    exit
+  end if
+  pActionPos = tLine
+  if pSpyBotCmd = #on then
+    actName = glob.player_manager.pSpyBot.action
+    data = glob.cmd_manager.actionDesc(actName)
+  else
+    if glob.mapBoardObj.pActAgent = 0 then
+      actName = pActAgent.getProp(#Actions, tLine)
+      data = glob.cmd_manager.actionDesc(actName)
+    else
+      actName = pActAgent.pStats.getProp(#Actions, tLine)
+      data = glob.cmd_manager.actionDesc(actName)
+    end if
+  end if
+  member("actionDesc").text = data.NAMETEXT & RETURN & data.description
+  member("objActions").fontStyle = [#plain]
+  if glob.game_manager.pState = #BATTLE then
+    if pActAgent.pState = #move then
+    else
+      glob.targetRange.showArrows()
+    end if
+  end if
+end
+
+on exeAction me
+  pActAgent.exeAction(pActionPos)
+end
+
+on show me
+  base = me.spriteNum - 2
+  x = 1
+  repeat while x <= 30
+    i = 0
+    repeat while i <= 12
+      sprite(base + i).locH = sprite(base + i).locH + 5
+      updateStage()
+      i = 1 + i
+    end repeat
+    x = 1 + x
+  end repeat
+end

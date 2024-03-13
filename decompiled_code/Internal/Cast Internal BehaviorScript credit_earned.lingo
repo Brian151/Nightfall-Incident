@@ -1,0 +1,35 @@
+property pSnum
+global glob
+
+on beginSprite me
+  glob.setAt(#creditEarned, me)
+  pSnum = me.spriteNum - 1
+  me.hide()
+end
+
+on hide me
+  sprite(pSnum + 1).stretch = 0
+  member("credits_earned_text").text = ""
+  sprite(pSnum + 1).visible = 0
+  sprite(pSnum + 2).visible = 0
+  updateStage()
+end
+
+on show me, newloc, amount
+  sprite(pSnum + 1).rect = sprite(pSnum + 1).rect + rect(60, 60, -60, -60)
+  sprite(pSnum + 1).loc = newloc
+  sprite(pSnum + 2).loc = sprite(pSnum + 1).loc + point(-50, 0)
+  sprite(pSnum + 1).visible = 1
+  sprite(pSnum + 2).visible = 1
+  updateStage()
+  i = 1
+  repeat while i <= 15
+    sprite(pSnum + 1).rect = sprite(pSnum + 1).rect + rect(-4, -4, 4, 4)
+    updateStage()
+    i = 1 + i
+  end repeat
+  member("credits_earned_text").text = string(amount) & " CREDITS"
+  updateStage()
+  delayTime(1000)
+  me.hide()
+end

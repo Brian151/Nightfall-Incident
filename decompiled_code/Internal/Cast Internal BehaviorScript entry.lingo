@@ -1,0 +1,23 @@
+property pBase, pData, pCompany, pFlag
+global glob
+
+on beginSprite me
+  pData = glob.getProp(#WorldData, glob.towerID)
+  pBase = me.spriteNum - 1
+  me.updateScreen()
+end
+
+on enterFrame me
+  if voidp(pFlag) then
+    SndSFX("snd_popup_" & pCompany)
+    pFlag = 1
+  end if
+end
+
+on updateScreen me
+  pCompany = pData.company
+  sprite(pBase + 1).member = member("companay_bkg_" & pCompany)
+  sprite(pBase + 3).member = member("companay_logo_" & pCompany)
+  sprite(pBase + 7).member = member("companay_warningMsg_" & pCompany)
+  member("warning_company_motto").text = member("companay_motto_" & pCompany).text
+end

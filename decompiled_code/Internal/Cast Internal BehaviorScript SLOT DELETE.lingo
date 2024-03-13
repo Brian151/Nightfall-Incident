@@ -1,0 +1,6 @@
+global glob
+
+on mouseDown me
+  SndSFX("snd_delete")
+  glob.confirm.show(me.spriteNum - 2)
+end

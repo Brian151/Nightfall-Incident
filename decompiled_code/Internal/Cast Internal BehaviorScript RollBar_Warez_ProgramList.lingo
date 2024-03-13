@@ -1,0 +1,7 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.blend = 0
+end

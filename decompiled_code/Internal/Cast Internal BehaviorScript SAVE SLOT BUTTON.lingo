@@ -1,0 +1,11 @@
+global glob
+
+on beginSprite me
+  glob.SaveFilesBH.report(me.spriteNum)
+end
+
+on mouseUp me
+  glob.setAt(#towerID, VOID)
+  SndSFX("snd_mouse_select")
+  glob.SaveFilesBH.doClick(me.spriteNum)
+end

@@ -1,0 +1,68 @@
+property my, pShift, pSteps, pCount, pBlendChange, pSpeeds, pMove, pDir
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pSpeeds = [point(12, -6), point(12, 6), point(-12, 6), point(-12, -6)]
+  me.setNewLoc()
+end
+
+on setNewLoc me
+  pSteps = 0
+  pCount = 0
+  pDir = random(4)
+  pMove = pSpeeds.getAt(pDir)
+  x = random(35) + 2
+  y = random(45) + 2
+  x = x * 48
+  y = y * 24 + 12
+  pShift = point(x, y)
+  my.loc = pShift
+  my.blend = 0
+  pBlendChange = 10
+end
+
+on exitFrame me
+  me.updateShift()
+  me.followMap()
+end
+
+on updateShift me
+  pCount = pCount + 1
+  if pCount = 4 then
+    pSteps = pSteps + 1
+    pCount = 0
+  end if
+  pShift = pShift + pMove
+  if pSteps mod 4 = 0 and pCount = 0 then
+    case pDir of
+      1:
+        pDir = getAt([1, 2, 4], random(3))
+      2:
+        pDir = getAt([1, 2, 3], random(3))
+      3:
+        pDir = getAt([2, 2, 4], random(3))
+      4:
+        pDir = getAt([1, 3, 4], random(3))
+    end case
+    pMove = pSpeeds.getAt(pDir)
+  end if
+end
+
+on followMap me
+  if my.blend >= 100 then
+    pBlendChange = -10
+  else
+    if my.blend <= 0 then
+      pBlendChange = 10
+    end if
+  end if
+  if my.member = member("blinkinglights_1") then
+    my.member = member("blinkinglights_2")
+  else
+    my.member = member("blinkinglights_1")
+  end if
+  my.blend = my.blend + pBlendChange
+  sprite(me.spriteNum).loc = sprite(glob.mapFlrManager.spriteNum).loc + pShift
+  updateStage()
+end

@@ -1,0 +1,32 @@
+property pSnum, pBank
+global glob
+
+on beginSprite me
+  glob.setAt(#checkMarks, me)
+  me.hide()
+end
+
+on showMark me, sLoc
+  if pBank.count = 0 then
+    exit
+  end if
+  sprite(pBank.getAt(1)).loc = sLoc
+  sprite(pBank.getAt(1)).visible = 1
+  updateStage()
+  pBank.deleteAt(1)
+end
+
+on hide me
+  pBank = []
+  i = 100
+  repeat while i <= 129
+    pBank.add(i)
+    i = 1 + i
+  end repeat
+  i = 1
+  repeat while i <= pBank.count
+    sprite(pBank.getAt(i)).loc = point(1000, 1000)
+    i = 1 + i
+  end repeat
+  updateStage()
+end

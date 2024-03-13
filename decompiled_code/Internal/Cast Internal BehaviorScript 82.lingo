@@ -1,0 +1,9 @@
+property pSlevel
+global glob
+
+on exitFrame me
+  if not pSlevel = glob.sLevel then
+    pSlevel = glob.sLevel
+    member("sLevel").text = "SECURITY LEVEL:" & pSlevel
+  end if
+end

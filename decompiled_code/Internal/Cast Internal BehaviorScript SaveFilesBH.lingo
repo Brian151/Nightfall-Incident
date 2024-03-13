@@ -1,0 +1,56 @@
+property pSp, pSaveData, pButtons
+global glob
+
+on beginSprite me
+  glob.setAt(#SaveFilesBH, me)
+  pSp = me.spriteNum
+  pButtons = []
+  pSlotData = [:]
+  me.updateButtons()
+end
+
+on report me, sp
+  pButtons.add(sp)
+end
+
+on updateButtons me
+  pSaveData = glob.file_manager.pSaveFiles
+  if the frameLabel = "edit" then
+    exit
+  end if
+  i = 1
+  repeat while i <= 3
+    if pSaveData.getAt(i) = #empty then
+      sprite(pSp + i - 1 * 3 + 1).member = member("save_slot2_button")
+      sprite(pSp + i - 1 * 3 + 3).visible = 0
+      sprite(100 + i).updateSpybotImage(i, 0)
+    else
+      sprite(pSp + i - 1 * 3 + 1).member = member("save_slot1_button")
+      sprite(pSp + i - 1 * 3 + 3).visible = 1
+      num = glob.file_manager.getSpyBotNum(i)
+      sprite(100 + i).updateSpybotImage(i, num)
+    end if
+    i = 1 + i
+  end repeat
+end
+
+on deleteSlot me, num
+  pos = pButtons.getOne(num)
+  glob.file_manager.deleteSlot(pos)
+end
+
+on doClick me, sp
+  pos = pButtons.getOne(sp)
+  if pos > 0 then
+    glob.file_manager.clickOnSave(pos)
+    glob.mode = #map
+    spBank()
+    if glob.newgame then
+      go("pickSpybot")
+    else
+      glob.file_manager.getSpyBotNum(pos)
+      go("map")
+    end if
+  else
+  end if
+end

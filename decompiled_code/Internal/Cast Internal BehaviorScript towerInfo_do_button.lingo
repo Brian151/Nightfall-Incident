@@ -1,0 +1,21 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+end
+
+on mouseDown me
+  case glob.towerInfoBox.pType of
+    "SMART":
+      glob.towerInfoBox.hide()
+      glob.smartnode.show()
+    "WAREZ":
+      glob.towerInfoBox.hide()
+      glob.dialogueManager.show()
+    "BATTLE":
+      SndMusicEnd()
+      glob.spybotVid.show()
+      glob.setAt(#towerState, glob.getPropRef(#WorldData, glob.towerID).state)
+  end case
+end

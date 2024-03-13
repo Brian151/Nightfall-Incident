@@ -1,0 +1,47 @@
+property my, pWho
+global glob
+
+on beginSprite me
+  glob.setAt(#endBattleBoard, me)
+  my = sprite(me.spriteNum)
+  my.visible = 0
+  sprite(me.spriteNum + 1).visible = 0
+  sprite(me.spriteNum - 1).visible = 0
+end
+
+on show me, whoWon
+  glob.game_manager.pState = #BattleOver
+  pWho = whoWon
+  if whoWon = #player then
+    my.member = member("endBattle_vistory")
+    SndSFX("snd_win")
+    crdt = glob.getPropRef(#WorldData, glob.towerID).data.reward
+    glob.credits = glob.credits + glob.creditsItem + crdt
+    member("creditsAwarded").text = string(crdt)
+    member("creditsItemAwarded").text = string(glob.creditsItem)
+  else
+    my.member = member("endBattle_defeat")
+    SndSFX("snd_lose")
+  end if
+  my.visible = 1
+  sprite(me.spriteNum + 1).visible = 1
+  sprite(me.spriteNum - 1).visible = 1
+  updateStage()
+end
+
+on logOut me
+  glob.mode = #map
+  spBank()
+  SndStop()
+  glob.map_manager.createNewMap()
+  if pWho = #player then
+    if the frameLabel = "play" then
+      glob.worldMap_manager.battleResult(#won)
+    end if
+  else
+    if the frameLabel = "play" then
+      glob.worldMap_manager.battleResult(#lost)
+    end if
+  end if
+  go("map")
+end

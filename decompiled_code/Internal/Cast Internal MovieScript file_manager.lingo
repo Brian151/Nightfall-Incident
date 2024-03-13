@@ -1,0 +1,237 @@
+property pData, pMaps, pMapPick, fio, pCurMap, pSaveFiles, pSlot
+global glob
+
+on new me
+  pMaps = []
+  pSlot = 1
+  if glob.getAt(#authorMode) = 1 then
+    fio = new(xtra("fileio"))
+    fio.setFilterMask("Junkbot Level,*.txt")
+  end if
+  me.loadSaveData()
+  return me
+end
+
+on loadSaveData me
+  pSaveFiles = []
+  temp = getPref("spbmain")
+  if voidp(temp) then
+    pSaveFiles = [#empty, #empty, #empty]
+    setPref("spbmain", string(pSaveFiles))
+  else
+    pSaveFiles = value(temp)
+  end if
+end
+
+on deleteSlot me, pos
+  pSaveFiles.setAt(pos, #empty)
+  setPref("spbmain", string(pSaveFiles))
+  glob.SaveFilesBH.updateButtons()
+  sendAllSprites(#updateRoMember)
+end
+
+on loadData me
+  pData = value(member("data").text)
+  pMaps = pData.maps
+  me.showMapList()
+end
+
+on SaveData me, pos, data
+  if pos = 0 then
+    pMaps.add(data)
+  else
+    pMaps.setAt(pos, data)
+  end if
+  data = [#cmds: [], #maps: pMaps]
+  member("data").text = string(data)
+end
+
+on playMap me
+  glob.map_manager.createNewMap([#cmd: #mapName, #data: pCurMap.name])
+  pCurMap = pMaps.getAt(pMapPick)
+  glob.map_manager.openMap(pCurMap, 1)
+end
+
+on openMap me, flag
+  if voidp(pMapPick) then
+    exit
+  end if
+  glob.map_manager.createNewMap([#cmd: #mapName, #data: pMaps.getAt(pMapPick).name], flag)
+  pCurMap = pMaps.getAt(pMapPick)
+  glob.map_manager.openMap(pCurMap, pMapPick)
+  member("saved_map_selected").text = ""
+end
+
+on createNewMap me
+  pCurMap = VOID
+end
+
+on copyMap me
+  pCurMap = duplicate(pMaps.getAt(pMapPick))
+  me.SaveData(0, pCurMap)
+  me.loadData()
+end
+
+on deleteMap me
+  pMaps.deleteAt(pMapPick)
+  data = [#cmds: [], #maps: pMaps]
+  member("data").text = string(data)
+  me.loadData()
+end
+
+on selectMap me, lineNum
+  if lineNum > pMaps.count or lineNum < 0 then
+    exit
+  end if
+  pMapPick = lineNum
+  member("saved_map_selected").text = pMaps.getAt(lineNum).name
+end
+
+on showMapList me
+  temp = ""
+  i = 1
+  repeat while i <= pMaps.count
+    if i = pMaps.count then
+      temp = temp & pMaps.getAt(i).name
+    else
+      temp = temp & pMaps.getAt(i).name & RETURN
+    end if
+    i = 1 + i
+  end repeat
+  member("saved_map_list").text = temp
+  member("saved_map_selected").text = ""
+end
+
+on saveLevel me, data
+  leveltext = string(data)
+  defaultFileName = member("map_name").text
+  if defaultFileName = "" then
+    defaultFileName = "untitled_level.txt"
+  else
+    dfn = defaultFileName
+    defaultFileName = ""
+    i = 1
+    repeat while i <= dfn.length
+      if "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_" contains dfn.getProp(#char, i) then
+        defaultFileName = defaultFileName & dfn.getProp(#char, i)
+      else
+        defaultFileName = defaultFileName & "_"
+      end if
+      i = 1 + i
+    end repeat
+    repeat while the last char in defaultFileName = "_"
+      if defaultFileName.length <= 2 then
+      else
+      end if
+    end repeat
+    defaultFileName = defaultFileName & ".txt"
+  end if
+  levelfilename = fio.displaySave("Save level", defaultFileName)
+  if levelfilename = "" then
+    return 
+  end if
+  fio.createFile(levelfilename)
+  fio.openFile(levelfilename, 2)
+  fio.writeString(leveltext)
+  fio.closeFile()
+end
+
+on loadLevel me, what
+  if voidp(what) then
+    levelfilename = fio.displayOpen()
+    if voidp(levelfilename) or levelfilename = "" then
+      return 
+    end if
+    fio.openFile(levelfilename, 1)
+    leveltext = fio.ReadFile()
+    fio.closeFile()
+    if voidp(leveltext) or leveltext = "" then
+      return 
+    end if
+  else
+    leveltext = member(what).text
+  end if
+  pMaps = []
+  pMaps.add(value(leveltext))
+  pMapPick = 1
+  me.openMap(what)
+end
+
+on clickOnSave me, pos
+  if not voidp(pos) then
+    pSlot = pos
+  end if
+  if pSaveFiles.getAt(pos) = #empty then
+    glob.setAt(#newgame, 1)
+    glob.setAt(#slotNum, pos)
+    glob.setAt(#SPYBOT, 1)
+    glob.setAt(#blackoutFlag, 0)
+    me.savePref(pos)
+  else
+    glob.setAt(#newgame, 0)
+    me.loadPref(pos)
+  end if
+end
+
+on savePref me, pos, flag
+  if not voidp(pos) then
+    pSlot = pos
+  end if
+  fname = "spbslot" & pSlot
+  fAgents = glob.player_manager.pAgentNames
+  fData = [#SPYBOT: glob.SPYBOT, #sLevel: glob.sLevel, #credits: glob.credits, #agents: fAgents, #nodes: me.updateNodeStates()]
+  pSaveFiles.setAt(pSlot, fname)
+  setPref("spbmain", string(pSaveFiles))
+  setPref(fname, string(fData))
+end
+
+on loadPref me, pos
+  if not voidp(pos) then
+    pSlot = pos
+  end if
+  fname = pSaveFiles.getAt(pSlot)
+  fData = value(getPref(fname))
+  glob.credits = fData.credits
+  glob.sLevel = fData.sLevel
+  glob.player_manager.loadAgents(fData.agents)
+  i = 1
+  repeat while i <= fData.count(#nodes)
+    glob.getPropRef(#WorldData, i).state = fData.getProp(#nodes, i)
+    i = 1 + i
+  end repeat
+end
+
+on updateNodeStates me
+  temp = []
+  i = 1
+  repeat while i <= glob.count(#WorldData)
+    temp.add(glob.getPropRef(#WorldData, i).state)
+    i = 1 + i
+  end repeat
+  return temp
+end
+
+on getSpyBotNum me, pos
+  fname = pSaveFiles.getAt(pos)
+  fData = value(getPref(fname))
+  if voidp(fData) then
+    return 0
+  else
+    glob.credits = fData.credits
+    glob.sLevel = fData.sLevel
+    glob.player_manager.loadAgents(fData.agents)
+    if fData.getProp(#nodes, 35) = #WIN and fData.getProp(#nodes, 40) = #on then
+      put "BLACKOUT FLAG ON"
+      glob.setAt(#blackoutFlag, 1)
+    else
+      glob.setAt(#blackoutFlag, 0)
+    end if
+    if voidp(fData.getAt(#SPYBOT)) then
+      glob.setAt(#SPYBOT, 1)
+      me.savePref(pos)
+    else
+      glob.setAt(#SPYBOT, fData.getAt(#SPYBOT))
+    end if
+    return glob.getAt(#SPYBOT)
+  end if
+end

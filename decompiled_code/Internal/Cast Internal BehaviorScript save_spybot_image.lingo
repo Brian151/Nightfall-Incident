@@ -1,0 +1,17 @@
+property my, pSps, pId, pImg
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pSps = [101, 102, 103]
+  pId = pSps.getOne(me.spriteNum)
+end
+
+on updateSpybotImage me, id, img
+  if id <> pId then
+    exit
+  end if
+  pImg = img
+  my.member = member("spybot_" & pImg & "_image")
+  sprite(me.spriteNum + 3).member = member("spybot_" & pImg & "_name")
+end

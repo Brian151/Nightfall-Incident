@@ -1,0 +1,46 @@
+property my, pBlend
+global glob
+
+on beginSprite me
+  glob.setAt(#beginHiLite, me)
+  my = sprite(me.spriteNum)
+  pBlend = 10
+  my.visible = 0
+end
+
+on exitFrame me
+  if not glob.game_manager.pState = #BATTLE then
+    me.toBeOrNotToBe()
+  end if
+  if my.visible = 0 then
+    exit
+  end if
+  my.blend = my.blend + pBlend
+  if pBlend > 0 and my.blend > 80 then
+    pBlend = -pBlend
+  else
+    if pBlend < 0 and my.blend < 0 then
+      pBlend = -pBlend
+    end if
+  end if
+end
+
+on show me
+  my.visible = 1
+end
+
+on hide me
+  my.visible = 0
+end
+
+on toBeOrNotToBe me
+  OBJ = glob.ai_manager.findUploadSpot()
+  num = glob.player_manager.checkProgramNum()
+  if OBJ = 0 and glob.game_manager.pState = #UPLOAD then
+    me.show()
+  else
+    if num = 0 and glob.game_manager.pState = #UPLOAD then
+      me.show()
+    end if
+  end if
+end

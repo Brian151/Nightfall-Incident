@@ -1,0 +1,26 @@
+property my
+global glob
+
+on beginSprite me
+  glob.setAt(#layer, me)
+  my = member("map_layer_list").text
+end
+
+on actLayer me, sp, myColor
+  num = me.spriteNum - sp
+  member("map_layer_list").getPropRef(#word, 1, 4).fontStyle = [#normal]
+  member("map_layer_list").getPropRef(#word, num).fontStyle = [#bold]
+  case num of
+    1:
+      member("editModeBox").text = "FLOOR>>"
+    2:
+      member("editModeBox").text = "WALL>>"
+    3:
+      member("editModeBox").text = "ITEM>>"
+    4:
+      member("editModeBox").text = "AGENT>>"
+  end case
+  glob.map_manager.activeLayer(num)
+  glob.tileHiBox.changeColor(myColor)
+  glob.objList.updateState(num)
+end

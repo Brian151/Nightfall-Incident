@@ -1,0 +1,38 @@
+property pArrows, pDir, pId, pMapSp
+global glob
+
+on beginSprite me
+  pArrows = [898, 899, 900, 901]
+  pDir = [point(24, 0), point(-24, 0), point(0, 12), point(0, -12)]
+  pId = pArrows.getOne(me.spriteNum)
+  pMapSp = glob.mapFlrManager.spriteNum
+end
+
+on mouseDown me
+  if glob.getAt(#scrollMap) = #NO then
+    exit
+  end if
+  rightEnd = -member("iso_floor").width - 650 - 250
+  bottomEnd = -member("iso_floor").height - 430 - 150
+  repeat while the stillDown
+    case pId of
+      1:
+        if sprite(pMapSp).locH < -80 then
+          sendAllSprites(#scrollMap, pDir.getAt(pId))
+        end if
+      2:
+        if sprite(pMapSp).locH > rightEnd + 80 then
+          sendAllSprites(#scrollMap, pDir.getAt(pId))
+        end if
+      3:
+        if sprite(pMapSp).locV < -80 then
+          sendAllSprites(#scrollMap, pDir.getAt(pId))
+        end if
+      4:
+        if sprite(pMapSp).locV > bottomEnd + 80 then
+          sendAllSprites(#scrollMap, pDir.getAt(pId))
+        end if
+    end case
+    updateStage()
+  end repeat
+end

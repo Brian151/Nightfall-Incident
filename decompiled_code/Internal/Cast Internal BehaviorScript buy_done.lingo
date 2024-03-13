@@ -1,0 +1,10 @@
+global glob
+
+on mouseUp me
+  glob.scrollMap = #YES
+  glob.warez.hide()
+  glob.file_manager.savePref()
+  sendAllSprites(#selectCheckOff)
+  glob.playerPrograms.hide()
+  sendAllSprites(#resetTowerImg)
+end

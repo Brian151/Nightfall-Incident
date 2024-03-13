@@ -1,0 +1,860 @@
+property my, pSnum, pBlend, pSlots, pActAgent, pActAgentState, pGrid, pClicked, pGroup, pgoal, pAttackFlag
+global glob
+
+on beginSprite me
+  glob.setAt(#targetRange, me)
+  pSnum = me.spriteNum
+  my = sprite(pSnum)
+  pSlots = [:]
+  pBlend = [#hide: 10, #mid: 50, #show: 100]
+  me.hideArrows()
+end
+
+on exitFrame me
+  if glob.mapBoardObj.pActAgent = 0 then
+    me.hideArrows()
+  else
+    if glob.mapBoardObj.pActAgent.OBJ.pState = #actionLocked then
+    else
+      if not glob.mapBoardObj.pActAgent.OBJ = pActAgent then
+        id = glob.mapBoardObj.pActAgent.OBJ.pId
+        if glob.game_manager.isDone(id) then
+          me.hideArrows()
+        else
+          me.showArrows()
+          me.doRollOver()
+        end if
+        if not glob.mapBoardObj.pActAgent = 0 then
+          pActAgentState = glob.mapBoardObj.pActAgent.OBJ.pState
+        end if
+      else
+        if glob.mapBoardObj.pActAgent.OBJ = pActAgent and pActAgentState <> glob.mapBoardObj.pActAgent.OBJ.pState then
+          id = glob.mapBoardObj.pActAgent.OBJ.pId
+          if glob.game_manager.isDone(id) then
+            me.hideArrows()
+          else
+            me.showArrows()
+            me.doRollOver()
+          end if
+          pActAgentState = glob.mapBoardObj.pActAgent.OBJ.pState
+        else
+          if not voidp(pActAgent) and pActAgent.getAt(#pType) = #item then
+            me.hideArrows()
+          else
+            id = glob.mapBoardObj.pActAgent.OBJ.pId
+            if glob.game_manager.isDone(id) then
+              me.hideArrows()
+            else
+            end if
+          end if
+        end if
+      end if
+    end if
+  end if
+end
+
+on doRollOver me
+  if not glob.game_manager.pState = #BATTLE then
+    exit
+  end if
+  if pActAgent.getAt(#pType) = #item then
+    exit
+  end if
+  roLoc = the mouseLoc
+  roPos = glob.map_manager.mapClickLocToPos(roLoc.getAt(1), roLoc.getAt(2))
+  rangePos = me.mapToRange(roPos.getAt(1).getAt(1), roPos.getAt(1).getAt(2))
+  roResult = me.itemInRange(rangePos)
+  if my.blend < 100 then
+    glob.targetLock.hideTargetLock(roPos.getAt(1))
+    exit
+  end if
+  if roResult > 1 then
+    newloc = glob.map_manager.mapClickPosToLoc(roPos.getAt(1).getAt(1), roPos.getAt(1).getAt(2))
+    glob.targetLock.newloc(point(newloc.getAt(1), newloc.getAt(2)))
+    glob.targetLock.showTargetLock(roPos.getAt(1))
+  else
+    glob.targetLock.hideTargetLock(roPos.getAt(1))
+  end if
+end
+
+on itemInRange me, pos
+  if pos.getAt(1) < 1 or pos.getAt(2) < 1 then
+    return 0
+  end if
+  if pos.getAt(1) > pGrid.count or pos.getAt(2) > pGrid.getAt(1).count then
+    return 0
+  end if
+  return pGrid.getAt(pos.getAt(1)).getAt(pos.getAt(2))
+end
+
+on mouseDown me
+  if glob.getAt(#thinking) then
+    exit
+  end if
+  pClicked = the mouseLoc
+  if glob.game_manager.pTurn = #player then
+    me.posOnRangeGrid()
+  end if
+end
+
+on vMouseDown me, pos
+  temp = glob.map_manager.mapClickPosToLoc(pos.getAt(1), pos.getAt(2))
+  pClicked = point(temp.getAt(1), temp.getAt(2))
+  me.posOnRangeGrid()
+end
+
+on posOnRangeGrid me
+  if glob.mapBoardObj.pActAgent = 0 then
+    exit
+  end if
+  state = glob.mapBoardObj.pActAgent.OBJ.pState
+  clickPos = glob.map_manager.mapClickLocToPos(pClicked.getAt(1), pClicked.getAt(2))
+  x = clickPos.getAt(1).getAt(1)
+  y = clickPos.getAt(1).getAt(2)
+  if me.checkMapSize(x, y) = 0 then
+    exit
+  end if
+  rPos = me.mapToRange(x, y)
+  roResult = me.itemInRange(rPos)
+  if roResult > 1 then
+    if pActAgent.pTeam = glob.game_manager.pTurn and not glob.game_manager.isDone(pActAgent.pId) then
+      if glob.game_manager.pState = #UPLOAD then
+        exit
+      end if
+      pickUp = glob.map_manager.returnCell([x, y])
+      if voidp(pickUp) then
+        pActAgent.moveAgent(VOID, [x, y], pClicked)
+      else
+        if pickUp.count(#OBJ) > 0 then
+          if pickUp.OBJ.type = #item then
+            glob.game_manager.doItemStuff(pickUp.OBJ.pointer)
+          end if
+        end if
+      end if
+      pActAgent.moveAgent(VOID, [x, y], pClicked)
+    else
+      put "Nope, it's not my turn, reset? or not?"
+      if glob.game_manager.pTurn = #player and pActAgent.pTeam = #com then
+        if pActAgent.pState = #action then
+          pActAgent.pStats.MoveCount = pActAgent.pStats.Movement
+          glob.targetRange.moveLoc([2000, 100])
+          glob.mapBoardObj.cleatActAgent()
+          pActAgent.pState = #hold
+          glob.targetLock.hideTargetLock()
+        end if
+      end if
+      glob.mapBoardObj.vMouseDown(pClicked)
+    end if
+  else
+    glob.mapBoardObj.mouseDown(pClicked)
+  end if
+end
+
+on checkMapSize me, x, y
+  vX = glob.map_manager.count(#pActMapData)
+  vY = glob.map_manager.getPropRef(#pActMapData, 1).count
+  if x < 1 or x > vX or y < 1 or y > vY then
+    return 0
+  else
+    return 1
+  end if
+end
+
+on mapToRange me, x, y
+  rCenter = pGrid.count / 2 + 1
+  shiftX = rCenter - pActAgent.getProp(#pPos, 1)
+  shiftY = rCenter - pActAgent.getProp(#pPos, 2)
+  x = x + shiftX
+  y = y + shiftY
+  return [x, y]
+end
+
+on rangeToMap me, x, y
+  rCenter = pGrid.count / 2 + 1
+  shiftX = rCenter - pActAgent.getProp(#pPos, 1)
+  shiftY = rCenter - pActAgent.getProp(#pPos, 2)
+  x = x - shiftX
+  y = y - shiftY
+  return [x, y]
+end
+
+on moveDistance me, rPos, tPos
+  mapPos = me.rangeToMap(rPos.getAt(1), rPos.getAt(2))
+  dist = sqrt(power(mapPos.getAt(1) - tPos.getAt(1), 2) + power(mapPos.getAt(2) - tPos.getAt(2), 2))
+  return dist
+end
+
+on seekCanAttack me, pos, force
+  mapPos = me.rangeToMap(pos.getAt(1), pos.getAt(2))
+  vX = glob.map_manager.count(#pActMapData)
+  vY = glob.map_manager.getPropRef(#pActMapData, 1).count
+  flag = 0
+  if mapPos.getAt(1) > 1 then
+    data = glob.map_manager.returnCell([mapPos.getAt(1) - 1, mapPos.getAt(2)])
+    if me.evaluateData(data) then
+      flag = 1
+      dmg = data.OBJ.pointer.count(#pBody) - force
+    end if
+  end if
+  if mapPos.getAt(1) < vX then
+    data = glob.map_manager.returnCell([mapPos.getAt(1) + 1, mapPos.getAt(2)])
+    if me.evaluateData(data) then
+      flag = 1
+      dmg = data.OBJ.pointer.count(#pBody) - force
+    end if
+  end if
+  if mapPos.getAt(2) > 1 then
+    data = glob.map_manager.returnCell([mapPos.getAt(1), mapPos.getAt(2) - 1])
+    if me.evaluateData(data) then
+      flag = 1
+      dmg = data.OBJ.pointer.count(#pBody) - force
+    end if
+  end if
+  if mapPos.getAt(2) < vY then
+    data = glob.map_manager.returnCell([mapPos.getAt(1), mapPos.getAt(2) + 1])
+    if me.evaluateData(data) then
+      flag = 1
+      dmg = data.OBJ.pointer.count(#pBody) - force
+    end if
+  end if
+  if flag then
+    return dmg
+  else
+    return 0
+  end if
+end
+
+on evaluateData me, data
+  if not voidp(data) then
+    if data.count(#OBJ) = 0 then
+      return 0
+    else
+      if data.OBJ.type = #item then
+        return 0
+      else
+        if data.OBJ.type = #agent and data.OBJ.pointer.pTeam = #player then
+          return 1
+        end if
+      end if
+    end if
+  else
+    return 0
+  end if
+end
+
+on hideArrows me
+  if my.loc = point(2000, 1000) then
+    exit
+  end if
+  me.moveLoc([2000, 1000], pBlend.hide)
+  i = 1
+  repeat while i <= 3
+    sp = pSnum + i
+    sprite(sp).loc = point(2000, 500)
+    i = 1 + i
+  end repeat
+end
+
+on showArrows me, peterSays
+  if not glob.game_manager.pState = #BATTLE then
+    exit
+  end if
+  pActAgent = glob.mapBoardObj.pActAgent.OBJ
+  pActAgent.checkState()
+  if pActAgent = 0 then
+    exit
+  end if
+  if pActAgent.pType = #item then
+    exit
+  end if
+  glob.setAt(#thinking, 1)
+  if pActAgent.pState = #move then
+    data = pActAgent.pStats.MoveCount
+  else
+    if pActAgent.pState = #action then
+      if pActAgent.pStats.count(#Actions) = 0 then
+        glob.mapBoardObj.actionDone()
+        exit
+      end if
+      pos = glob.infoManager.pActionPos
+      if pos > pActAgent.pStats.count(#Actions) then
+        pos = 1
+      end if
+      if voidp(pos) then
+        cmd = pActAgent.pStats.getProp(#Actions, 1)
+        cmd = glob.cmd_manager.actionDesc(cmd)
+        cType = cmd.type
+        data = cmd.range
+      else
+        if glob.game_manager.pTurn = #com then
+          cmd = pActAgent.pStats.getProp(#Actions, 1)
+          cmd = glob.cmd_manager.actionDesc(cmd)
+          cType = cmd.type
+          data = cmd.range
+        else
+          cmd = pActAgent.pStats.getProp(#Actions, pos)
+          cmd = glob.cmd_manager.actionDesc(cmd)
+          cType = cmd.type
+          data = cmd.range
+        end if
+      end if
+    end if
+  end if
+  me.makeGrid(data)
+  me.scanGrid(data, cType)
+  me.drawGrid(data * 2 + 1, cType)
+  newloc = sprite(pActAgent.pSp).loc
+  me.updateMember(pActAgent.pState)
+  state = pActAgent.pState
+  pAttackFlag = 0
+  if state = #action then
+    pos = glob.infoManager.pActionPos
+    if voidp(pos) then
+      pos = 1
+    end if
+    if pos > pActAgent.pStats.count(#Actions) then
+      pos = 1
+    end if
+    tempAct = pActAgent.pStats.getProp(#Actions, pos)
+    tempCmd = glob.cmd_manager.actionDesc(tempAct)
+    if tempCmd.requiredSize > 0 and pActAgent.count(#pBody) + 1 < tempCmd.requiredSize then
+      me.moveLoc(newloc, pBlend.mid)
+    else
+      if not tempCmd.cost = #infinity and tempCmd.cost > 0 and pActAgent.count(#pBody) + 1 < tempCmd.cost then
+        me.moveLoc(newloc, pBlend.mid)
+      else
+        pAttackFlag = 1
+        if glob.game_manager.pTurn = #player and pActAgent.pTeam = #com then
+          me.moveLoc(newloc, pBlend.mid)
+        else
+          me.moveLoc(newloc, pBlend.show)
+        end if
+      end if
+    end if
+  else
+    pAttackFlag = 1
+    if glob.game_manager.pTurn = #player and pActAgent.pTeam = #com then
+      me.moveLoc(newloc, pBlend.mid)
+    else
+      me.moveLoc(newloc, pBlend.show)
+    end if
+  end if
+  updateStage()
+  if not voidp(peterSays) then
+    if pActAgent.pState = #action then
+      delayTime(250)
+      glob.ai_manager.readyToAttack(pActAgent)
+    end if
+  else
+    if pActAgent.pStats.Movement = 0 and pActAgent.pTeam = #com and glob.game_manager.pTurn = #com then
+      delayTime(250)
+      glob.ai_manager.readyToAttack(pActAgent)
+    else
+      if pActAgent.pStats.MoveCount = 0 and pActAgent.pTeam = #com and glob.game_manager.pTurn = #com then
+        delayTime(250)
+        glob.ai_manager.readyToAttack(pActAgent)
+      end if
+    end if
+  end if
+  glob.thinking = 0
+end
+
+on makeGrid me, data
+  state = pActAgent.pState
+  if state = #move then
+    temp = member("moveGrid_" & data).text
+  else
+    if state = #action then
+      temp = member("actionGrid_" & data).text
+    end if
+  end if
+  if voidp(temp) then
+    exit
+  end if
+  w = temp.getPropRef(#line, 1).count(#char)
+  h = temp.count(#line)
+  pGrid = []
+  x = 1
+  repeat while x <= w
+    row = []
+    y = 1
+    repeat while y <= h
+      mark = temp.getPropRef(#line, y).getProp(#char, x)
+      row.add(mark)
+      y = 1 + y
+    end repeat
+    pGrid.add(row)
+    x = 1 + x
+  end repeat
+end
+
+on scanGrid me, actRange, actType
+  state = pActAgent.pState
+  w = 1
+  repeat while w <= pGrid.count
+    h = 1
+    repeat while h <= pGrid.getAt(1).count
+      temp = me.rangeToMap(w, h)
+      x = temp.getAt(1)
+      y = temp.getAt(2)
+      limitX = glob.map_manager.count(#pActMapData)
+      limitY = glob.map_manager.getPropRef(#pActMapData, 1).count
+      if x < 1 or x > limitX then
+        pGrid.getAt(w).setAt(h, ".")
+      else
+        if y < 1 or y > limitY then
+          pGrid.getAt(w).setAt(h, ".")
+        else
+          data = glob.map_manager.returnCell([x, y], actType)
+          if voidp(data) then
+            pGrid.getAt(w).setAt(h, ".")
+          else
+            if data = 1 then
+            else
+              if data.count(#OBJ) > 0 then
+                if state = #move then
+                  if data.OBJ.type = #item then
+                    if glob.game_manager.pTurn = #com then
+                      pGrid.getAt(w).setAt(h, ".")
+                    end if
+                  else
+                    if not data.OBJ.pointer = pActAgent then
+                      pGrid.getAt(w).setAt(h, ".")
+                    end if
+                  end if
+                else
+                  if state = #action then
+                    if data.OBJ.type = #item then
+                      pGrid.getAt(w).setAt(h, ".")
+                    else
+                      if actRange > 0 and data.OBJ.pointer = pActAgent then
+                        pGrid.getAt(w).setAt(h, ".")
+                      end if
+                    end if
+                  end if
+                end if
+              else
+              end if
+            end if
+          end if
+        end if
+      end if
+      h = 1 + h
+    end repeat
+    w = 1 + w
+  end repeat
+  if state = #move then
+    me.doPathFind()
+    me.doTruePathFind(pActAgent.pStats)
+  end if
+end
+
+on doTruePathFind me, data
+  if pGroup.count = 0 then
+    exit
+  end if
+  i = 1
+  repeat while i <= pGroup.getAt(1).count
+    cell = pGroup.getAt(1).getAt(i)
+    what = pGrid.getAt(cell.getAt(1)).getAt(cell.getAt(2))
+    cells = [cell]
+    paths = []
+    if what = "." then
+    else
+      flag = 0
+      j = 1
+      repeat while j <= data.MoveCount
+        paths.add(cells)
+        temp = []
+        k = 1
+        repeat while k <= cells.count
+          pos = cells.getAt(k)
+          if pos.getAt(2) > 1 then
+            y = pos.getAt(2) - 1
+            if [pos.getAt(1), y] = pgoal then
+              flag = 1
+            else
+              what = pGrid.getAt(pos.getAt(1)).getAt(y)
+              if temp.getOne([pos.getAt(1), y]) = 0 and not what = "." then
+                temp.add([pos.getAt(1), y])
+              end if
+            end if
+          end if
+          if pos.getAt(2) < pGrid.getAt(1).count then
+            y = pos.getAt(2) + 1
+            if [pos.getAt(1), y] = pgoal then
+              flag = 1
+            else
+              what = pGrid.getAt(pos.getAt(1)).getAt(y)
+              if temp.getOne([pos.getAt(1), y]) = 0 and not what = "." then
+                temp.add([pos.getAt(1), y])
+              end if
+            end if
+          end if
+          if pos.getAt(1) > 1 then
+            x = pos.getAt(1) - 1
+            if [x, pos.getAt(2)] = pgoal then
+              flag = 1
+            else
+              what = pGrid.getAt(x).getAt(pos.getAt(2))
+              if temp.getOne([x, pos.getAt(2)]) = 0 and not what = "." then
+                temp.add([x, pos.getAt(2)])
+              end if
+            end if
+          end if
+          if pos.getAt(1) < pGrid.count then
+            x = pos.getAt(1) + 1
+            if [x, pos.getAt(2)] = pgoal then
+              flag = 1
+            else
+              what = pGrid.getAt(x).getAt(pos.getAt(2))
+              if temp.getOne([x, pos.getAt(2)]) = 0 and not what = "." then
+                temp.add([x, pos.getAt(2)])
+              end if
+            end if
+          end if
+          k = 1 + k
+        end repeat
+        cells = temp
+        if flag then
+        else
+        end if
+        j = 1 + j
+      end repeat
+      if not flag then
+        pGrid.getAt(cell.getAt(1)).setAt(cell.getAt(2), ".")
+      end if
+    end if
+    i = 1 + i
+  end repeat
+end
+
+on findPathForAgent me, desPos
+  data = pActAgent.pStats
+  cell = desPos
+  cells = [[cell, cell]]
+  paths = []
+  flag = 0
+  j = 1
+  repeat while j <= data.MoveCount
+    if cells.count > 0 then
+      paths.add(cells)
+    end if
+    temp = []
+    tempX = []
+    k = 1
+    repeat while k <= cells.count
+      pos = cells.getAt(k).getAt(2)
+      if pos.getAt(2) > 1 then
+        y = pos.getAt(2) - 1
+        if [pos.getAt(1), y] = pgoal then
+          flag = 1
+        else
+          what = pGrid.getAt(pos.getAt(1)).getAt(y)
+          if temp.getOne([pos.getAt(1), y]) = 0 and not what = "." then
+            temp.add([pos.getAt(1), y])
+            tempX.add([pos, [pos.getAt(1), y]])
+          end if
+        end if
+      end if
+      if pos.getAt(2) < pGrid.getAt(1).count then
+        y = pos.getAt(2) + 1
+        if [pos.getAt(1), y] = pgoal then
+          flag = 1
+        else
+          what = pGrid.getAt(pos.getAt(1)).getAt(y)
+          if temp.getOne([pos.getAt(1), y]) = 0 and not what = "." then
+            temp.add([pos.getAt(1), y])
+            tempX.add([pos, [pos.getAt(1), y]])
+          end if
+        end if
+      end if
+      if pos.getAt(1) > 1 then
+        x = pos.getAt(1) - 1
+        if [x, pos.getAt(2)] = pgoal then
+          flag = 1
+        else
+          what = pGrid.getAt(x).getAt(pos.getAt(2))
+          if temp.getOne([x, pos.getAt(2)]) = 0 and not what = "." then
+            temp.add([x, pos.getAt(2)])
+            tempX.add([pos, [x, pos.getAt(2)]])
+          end if
+        end if
+      end if
+      if pos.getAt(1) < pGrid.count then
+        x = pos.getAt(1) + 1
+        if [x, pos.getAt(2)] = pgoal then
+          flag = 1
+        else
+          what = pGrid.getAt(x).getAt(pos.getAt(2))
+          if temp.getOne([x, pos.getAt(2)]) = 0 and not what = "." then
+            temp.add([x, pos.getAt(2)])
+            tempX.add([pos, [x, pos.getAt(2)]])
+          end if
+        end if
+      end if
+      k = 1 + k
+    end repeat
+    cells = tempX
+    if flag then
+    else
+      j = 1 + j
+    end if
+  end repeat
+  if not flag then
+    return 0
+  else
+    startCells = me.getStartCell()
+    paths.add(startCells)
+    k = paths.count
+    repeat while k >= 2
+      temp1 = []
+      temp2 = []
+      l = 1
+      repeat while l <= paths.getAt(k).count
+        m = 1
+        repeat while m <= paths.getAt(k - 1).count
+          x1 = paths.getAt(k).getAt(l)
+          x2 = paths.getAt(k - 1).getAt(m)
+          if x1.getAt(1) = x2.getAt(2) then
+            temp1.add(x1)
+            temp2.add(x2)
+          end if
+          m = 1 + m
+        end repeat
+        l = 1 + l
+      end repeat
+      paths.setAt(k, temp1)
+      paths.setAt(k - 1, temp2)
+      k = 65535 + k
+    end repeat
+    return paths
+  end if
+end
+
+on lockOnTarget me, actType
+  state = pActAgent.pState
+  w = 1
+  repeat while w <= pGrid.count
+    h = 1
+    repeat while h <= pGrid.getAt(1).count
+      if not pGrid.getAt(w).getAt(h) = "." then
+        temp = me.rangeToMap(w, h)
+        x = temp.getAt(1)
+        y = temp.getAt(2)
+        data = glob.map_manager.returnCell([x, y], actType)
+        if voidp(data) then
+        else
+          if data = 1 then
+          else
+            if data.count(#OBJ) > 0 then
+              if not data.OBJ.pointer.pTeam = glob.game_manager.pTurn then
+                return [data.OBJ, x, y]
+              end if
+            end if
+          end if
+        end if
+      else
+      end if
+      h = 1 + h
+    end repeat
+    w = 1 + w
+  end repeat
+  return 0
+end
+
+on getStartCell me
+  temp = []
+  if pgoal.getAt(2) > 1 then
+    y = pgoal.getAt(2) - 1
+    a = pGrid.getAt(pgoal.getAt(1)).getAt(y)
+    if a <> "." then
+      temp.add([[pgoal.getAt(1), y], pgoal])
+    end if
+  end if
+  if pgoal.getAt(2) < pGrid.getAt(1).count then
+    y = pgoal.getAt(2) + 1
+    a = pGrid.getAt(pgoal.getAt(1)).getAt(y)
+    if a <> "." then
+      temp.add([[pgoal.getAt(1), y], pgoal])
+    end if
+  end if
+  if pgoal.getAt(1) > 1 then
+    x = pgoal.getAt(1) - 1
+    a = pGrid.getAt(x).getAt(pgoal.getAt(2))
+    if a <> "." then
+      temp.add([[x, pgoal.getAt(2)], pgoal])
+    end if
+  end if
+  if pgoal.getAt(1) < pGrid.count then
+    x = pgoal.getAt(1) + 1
+    a = pGrid.getAt(x).getAt(pgoal.getAt(2))
+    if a <> "." then
+      temp.add([[x, pgoal.getAt(2)], pgoal])
+    end if
+  end if
+  return temp
+end
+
+on doPathFind me
+  pgoal = [pGrid.count / 2 + 1, pGrid.getAt(1).count / 2 + 1]
+  pGroup = []
+  w = 1
+  repeat while w <= pGrid.count
+    h = 1
+    repeat while h <= pGrid.getAt(1).count
+      if pGrid.getAt(w).getAt(h) = "." then
+      else
+        flag = 0
+        if h > 1 then
+          temp = pGrid.getAt(w).getAt(h - 1)
+          if not temp = "." or pgoal = [w, h - 1] then
+            pos1 = me.checkPos(w, h)
+            pos2 = me.checkPos(w, h - 1)
+            me.checkCase(pos1, pos2, [w, h], [w, h - 1])
+            flag = 1
+          end if
+        end if
+        if h < pGrid.getAt(1).count then
+          temp = pGrid.getAt(w).getAt(h + 1)
+          if not temp = "." or pgoal = [w, h + 1] then
+            pos1 = me.checkPos(w, h)
+            pos2 = me.checkPos(w, h + 1)
+            me.checkCase(pos1, pos2, [w, h], [w, h + 1])
+            flag = 1
+          end if
+        end if
+        if w > 1 then
+          temp = pGrid.getAt(w - 1).getAt(h)
+          if not temp = "." or pgoal = [w - 1, h] then
+            pos1 = me.checkPos(w, h)
+            pos2 = me.checkPos(w - 1, h)
+            me.checkCase(pos1, pos2, [w, h], [w - 1, h])
+            flag = 1
+          end if
+        end if
+        if w < pGrid.count then
+          temp = pGrid.getAt(w + 1).getAt(h)
+          if not temp = "." or pgoal = [w + 1, h] then
+            pos1 = me.checkPos(w, h)
+            pos2 = me.checkPos(w + 1, h)
+            me.checkCase(pos1, pos2, [w, h], [w + 1, h])
+            flag = 1
+          end if
+        end if
+        if flag = 0 then
+          pGroup.add([[w, h]])
+        end if
+      end if
+      h = 1 + h
+    end repeat
+    w = 1 + w
+  end repeat
+  me.removeLoners()
+end
+
+on removeLoners me
+  if pGroup.count <= 1 then
+    exit
+  end if
+  i = 1
+  repeat while i <= pGroup.count
+    if getOne(pGroup.getAt(i), pgoal) = 0 then
+      j = 1
+      repeat while j <= pGroup.getAt(i).count
+        pos = pGroup.getAt(i).getAt(j)
+        pGrid.getAt(pos.getAt(1)).setAt(pos.getAt(2), ".")
+        j = 1 + j
+      end repeat
+    end if
+    i = 1 + i
+  end repeat
+end
+
+on checkPos me, x, y
+  i = 1
+  repeat while i <= pGroup.count
+    pos = getOne(pGroup.getAt(i), [x, y])
+    if pos > 0 then
+      return i
+    end if
+    i = 1 + i
+  end repeat
+  return 0
+end
+
+on checkCase me, pos1, pos2, xy, xy2
+  if pos1 = 0 and pos2 = 0 then
+    pGroup.add([xy, xy2])
+  else
+    if pos1 = 0 and pos2 > 0 then
+      pGroup.getAt(pos2).add(xy)
+    else
+      if pos1 > 0 and pos2 = 0 then
+        pGroup.getAt(pos1).add(xy2)
+      else
+        if pos1 = pos2 then
+        else
+          j = 1
+          repeat while j <= pGroup.getAt(pos2).count
+            pGroup.getAt(pos1).add(pGroup.getAt(pos2).getAt(j))
+            j = 1 + j
+          end repeat
+          pGroup.deleteAt(pos2)
+        end if
+      end if
+    end if
+  end if
+end
+
+on drawGrid me, unitSize, cType
+  img = image(unitSize * 32, unitSize * 32, 8)
+  w = 1
+  repeat while w <= pGrid.count
+    h = 1
+    repeat while h <= pGrid.getAt(1).count
+      what = pGrid.getAt(w).getAt(h)
+      if what = "." then
+        mem = member("clear")
+      else
+        if pActAgent.pState = #move then
+          mem = member(pActAgent.pState & "_range_art_" & what)
+        else
+          case cType of
+            "attack":
+              mem = member(pActAgent.pState & "_range_art_" & what)
+            "grid":
+              mem = member(pActAgent.pState & "_range_art_" & what & "_grid")
+            otherwise:
+              mem = member(pActAgent.pState & "_range_art_" & what & "_mod")
+          end case
+        end if
+      end if
+      srcImg = mem.image
+      srcRect = mem.rect
+      dX = w - 1 * 32
+      dY = h - 1 * 32
+      destRect = rect(dX, dY, dX + 32, dY + 32)
+      img.copyPixels(srcImg, destRect, srcRect)
+      h = 1 + h
+    end repeat
+    w = 1 + w
+  end repeat
+  member(pActAgent.pState & "_range").image = img
+  rg = member(pActAgent.pState & "_range").regPoint
+  member(pActAgent.pState & "_range").regPoint = rg + point(-16, -16)
+end
+
+on moveLoc me, spot, blnd
+  my.loc = point(spot.getAt(1), spot.getAt(2))
+  if not voidp(blnd) then
+    my.blend = blnd
+  end if
+end
+
+on updateMember me, state
+  if state = #action or state = #move then
+    my.member = member(state & "_range")
+    updateStage()
+  end if
+end

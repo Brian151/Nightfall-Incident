@@ -1,0 +1,17 @@
+property my, pId
+global glob
+
+on beginSprite me
+  temp = [106, 107, 108, 109]
+  pId = temp.getOne(me.spriteNum)
+end
+
+on mouseUp me
+  glob.setAt(#SPYBOT, pId)
+  glob.sLevel = 1
+  glob.WorldData = duplicate(glob.restore.WorldData)
+  glob.player_manager.pAgentNames = duplicate(glob.restore.playerAgent)
+  glob.credits = glob.restore.credits
+  glob.file_manager.savePref(glob.slotNum)
+  go("map")
+end

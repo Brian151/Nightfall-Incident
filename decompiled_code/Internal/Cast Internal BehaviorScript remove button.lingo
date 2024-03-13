@@ -1,0 +1,41 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.visible = 0
+end
+
+on mouseUp me
+  if my.visible = 1 then
+    glob.map_manager.undoUpload()
+    glob.mapBoardObj.pActAgent = 0
+    glob.player_manager.pActAgent = 0
+    SndSFX("snd_remove")
+  end if
+end
+
+on updateRemove me
+  mba = glob.mapBoardObj.pActAgent
+  if voidp(mba) then
+    exit
+  end if
+  if mba = 0 then
+    exit
+  end if
+  if objectp(mba.getAt(#OBJ)) then
+    if mba.getProp(#OBJ, #pTeam) = #player then
+      my.visible = 1
+    else
+      my.visible = 0
+    end if
+  end if
+end
+
+on exitFrame me
+  if glob.game_manager.pState = #BATTLE then
+    my.visible = 0
+    exit
+  end if
+  me.updateRemove()
+end

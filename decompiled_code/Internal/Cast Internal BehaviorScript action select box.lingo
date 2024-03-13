@@ -1,0 +1,47 @@
+property my, pMem
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  my.member.text = ""
+  my.member.fontStyle = [#plain]
+end
+
+on mouseUp me
+  ml = my.pointToLine(the mouseLoc)
+  if not voidp(glob.getAt(#game_manager)) then
+    if glob.game_manager.pState = #BATTLE then
+      glob.mapBoardObj.moveDone()
+    end if
+  end if
+  SndSFX("snd_info_action")
+  glob.infoManager.actionSelected(ml)
+end
+
+on exitFrame me
+  if rollover(me.spriteNum) then
+    ml = my.pointToLine(the mouseLoc)
+    if ml = -1 then
+      me.mouseLeave()
+    else
+      i = 1
+      repeat while i <= 3
+        sp = 4 - i
+        if ml = i and not my.member.getProp(#line, i) = "" then
+          sprite(me.spriteNum - sp).blend = 40
+        else
+          sprite(me.spriteNum - sp).blend = 0
+        end if
+        i = 1 + i
+      end repeat
+    end if
+  end if
+end
+
+on mouseLeave me
+  i = 1
+  repeat while i <= 3
+    sprite(me.spriteNum - i).blend = 0
+    i = 1 + i
+  end repeat
+end

@@ -1,0 +1,6 @@
+global glob
+
+on mouseUp me
+  glob.map_manager.readNameField()
+  sendAllSprites(#editOff)
+end

@@ -1,0 +1,21 @@
+property my
+global glob
+
+on beginSprite me
+  glob.setAt(#mapBoardObj, me)
+  my = sprite(me.spriteNum)
+  if voidp(glob.map_manager.pActMapData) then
+    my.loc = point(1000, 1000)
+  end if
+end
+
+on updateLoc me, x, y
+  my.loc = point(x, y)
+end
+
+on mouseDown me
+  sendAllSprites(#editOff)
+  pos = glob.map_manager.mapClick(the clickLoc.getAt(1), the clickLoc.getAt(2))
+  glob.map_manager.new_pMapClickPos(pos)
+  pass()
+end

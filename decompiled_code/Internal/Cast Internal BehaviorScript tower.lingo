@@ -1,0 +1,201 @@
+property my, pMember, pMemberWin, pPos, pSize, pLoc, pOldLoc, pSelectCheck, pId, pCompany, pType, pIndex, pIcon, pName, pData, pDesc, pPaths, pCnxt, pState
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pIndex = me.spriteNum - 800
+  data = glob.getProp(#WorldData, pIndex)
+  pId = data.id
+  pCompany = data.company
+  pType = data.type
+  pIcon = data.icon
+  pMember = pCompany & "_normal"
+  pMemberWin = pCompany & "_owned"
+  pName = data.name
+  pPaths = data.path
+  pData = data.data
+  pSelectCheck = 0
+  pDesc = member("tower_desc_" & pIndex).text
+  pCnxt = []
+  pState = data.state
+  if pState = #WIN then
+    pMember = pMemberWin
+  end if
+  my.member = member(pMember)
+  pPos = [random(20) + 2, random(25) + 2]
+  pSize = [member("iso_tile").width, member("iso_tile").height]
+  pLoc = my.loc
+  my.loc = glob.mapFlrManager.my.loc + pLoc
+  updateStage()
+  my.locZ = 2000 + my.locV
+  me.toggle()
+end
+
+on exitFrame me
+  if glob.getAt(#scrollMap) = #NO and pSelectCheck then
+    my.member = member(pMember & "_selected")
+  end if
+  me.toggle()
+end
+
+on selectCheckOff me
+  pSelectCheck = 0
+  my.member = member(pMember)
+end
+
+on mouseDown me
+  if glob.getAt(#scrollMap) = #NO then
+    exit
+  end if
+  if pState = #off then
+    pass()
+  end if
+  glob.setAt(#towerID, pId)
+  glob.towerInfoName.hide()
+  SndSFX("snd_select_" & pType)
+  pSelectCheck = 1
+  jumpLoc = my.loc - point(325, 210)
+  flag = glob.mapFlrManager.mouseDown(jumpLoc)
+  if flag then
+    glob.setAt(#scrollMap, #NO)
+    linkFlag = me.checkLink()
+    glob.towerInfoBox.show(pType, pIcon, pName, pData, pDesc, linkFlag)
+    glob.worldMap_manager.reportActTower(me.spriteNum)
+  end if
+end
+
+on vMouseDown me, cmd
+  if glob.getAt(#scrollMap) = #NO and voidp(cmd) then
+    exit
+  end if
+  glob.setAt(#towerID, pId)
+  glob.towerInfoName.hide()
+  SndSFX("snd_select_" & pType)
+  jumpLoc = my.loc - point(325, 210)
+  flag = glob.mapFlrManager.mouseDown(jumpLoc, cmd)
+  if flag then
+    glob.setAt(#scrollMap, #NO)
+    linkFlag = me.checkLink()
+    glob.worldMap_manager.reportActTower(me.spriteNum)
+  end if
+end
+
+on checkLink me
+  flag = 0
+  i = 1
+  repeat while i <= pPaths.count
+    if sprite(pPaths.getAt(i)).blend > 0 then
+      flag = 1
+    end if
+    i = 1 + i
+  end repeat
+  return flag
+end
+
+on followMap me
+  my.loc = glob.mapFlrManager.my.loc + pLoc
+end
+
+on mouseEnter me
+  if my.blend < 20 or my.visible = 0 then
+    exit
+  end if
+  if glob.getAt(#scrollMap) = #NO then
+    exit
+  end if
+  SndSFX("snd_rollover_" & pType)
+end
+
+on mouseWithin me
+  if glob.getAt(#scrollMap) = #NO or pSelectCheck then
+    exit
+  end if
+  if pState = #off then
+    exit
+  end if
+  my.member = member(pMember & "_over")
+  if pCompany = 0 then
+    nodeNameData = pName
+  else
+    secu = "SECURITY LEVEL:" & glob.getPropRef(#WorldData, pId).data.security
+    nodeNameData = glob.getProp(#companyNames, pCompany) & RETURN & pName & RETURN & secu
+  end if
+  glob.towerInfoName.show(my.loc, nodeNameData)
+end
+
+on resetTowerImg me
+  my.member = member(pMember)
+end
+
+on mouseLeave me
+  if glob.getAt(#scrollMap) = #NO or pSelectCheck then
+    exit
+  end if
+  my.member = member(pMember)
+  glob.towerInfoName.hide()
+end
+
+on reportCnxt me, id
+  if id = pId then
+    return pCnxt
+  end if
+end
+
+on toggle me
+  if pState = #off then
+    my.blend = 0
+  else
+    if pState = #on then
+      my.blend = 100
+    else
+      if pState = #WIN then
+        pMember = pMemberWin
+        i = 1
+        repeat while i <= pPaths.count
+          pos = pCnxt.getOne(pPaths.getAt(i))
+          if pos > 0 then
+          else
+            pCnxt.add(pPaths.getAt(i))
+          end if
+          i = 1 + i
+        end repeat
+        my.blend = 100
+      end if
+    end if
+  end if
+  j = 1
+  repeat while j <= pCnxt.count
+    sprite(pCnxt.getAt(j)).blend = 50
+    if pState = #WIN then
+      sendAllSprites(#doit, pCnxt.getAt(j), me.spriteNum)
+    end if
+    j = 1 + j
+  end repeat
+end
+
+on doit me, m, sp
+  if not sp = me.spriteNum then
+    if pPaths.getOne(m) > 0 and pState = #off then
+      pState = #on
+      glob.getPropRef(#WorldData, pId).state = pState
+    end if
+  end if
+end
+
+on battleResult me, state
+  case state of
+    #won:
+      pState = #WIN
+      if not pMember = pMemberWin then
+        pMember = pMemberWin
+      end if
+      my.member = member(pMember)
+      updateStage()
+    #lost:
+      pState = #LOSE
+  end case
+end
+
+on scrollMap me, slide
+  my.loc = my.loc + slide
+end

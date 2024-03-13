@@ -1,0 +1,23 @@
+property my
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+end
+
+on exitFrame me
+  agent = glob.tileHiBox.pActAgent
+  if agent = 0 then
+    my.member.text = ""
+  else
+    if objectp(agent) then
+      data = agent.OBJ.pStats
+      if agent.OBJ.pType = #item then
+        temp = data.name & RETURN & data.description
+      else
+        temp = data.name & " [" & agent.OBJ.pTeam & "]" & RETURN & data.description
+      end if
+      my.member.text = temp
+    end if
+  end if
+end

@@ -1,0 +1,9 @@
+property pCredits
+global glob
+
+on exitFrame me
+  if not pCredits = glob.credits then
+    pCredits = integer(glob.credits)
+    member("credits").text = string(pCredits)
+  end if
+end

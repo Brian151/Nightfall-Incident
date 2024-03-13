@@ -1,0 +1,38 @@
+property pList, pBox
+global glob
+
+on beginSprite me
+  glob.setAt(#cmdList, me)
+  pBox = member("cmds_list")
+  me.updateList()
+  me.updateText()
+end
+
+on mouseDown me
+  glob.cmd_manager.selectCmd(the mouseLine)
+end
+
+on loadList me
+  me.updateList()
+  me.updateText()
+end
+
+on updateList me
+  pList = glob.cmd_manager.passList()
+end
+
+on updateText me
+  pBox.text = ""
+  i = 1
+  repeat while i <= pList.count
+    tName = pList.getAt(i).name
+    tType = pList.getAt(i).type
+    tReq = pList.getAt(i).requiredSize
+    if i = pList.count then
+      pBox.text = pBox.text & tName & " (" & tReq & ")" & " (" & tType & ")"
+    else
+      pBox.text = pBox.text & tName & " (" & tReq & ")" & " (" & tType & ")" & RETURN
+    end if
+    i = 1 + i
+  end repeat
+end

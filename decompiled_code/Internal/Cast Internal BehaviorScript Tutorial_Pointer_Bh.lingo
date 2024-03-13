@@ -1,0 +1,33 @@
+property my, pLoc, pFlag
+global glob
+
+on beginSprite me
+  glob.setAt(#tutorialPointer, me)
+  pFlag = 0
+  my = sprite(me.spriteNum)
+  OBJ = glob.ai_manager.findUploadSpot()
+  if OBJ = 0 then
+    my.visible = 0
+  else
+    my.visible = 1
+    pos = OBJ.pPos
+    temp = glob.map_manager.mapClickPosToLoc(pos.getAt(1), pos.getAt(2))
+    pLoc = point(temp.getAt(1), temp.getAt(2)) + point(200, 17)
+    my.loc = pLoc
+    member("tutorial_pointer_text").text = member("tutorial_pointer_click_uploadSpot").text
+  end if
+end
+
+on pointProgramList me
+  if pFlag then
+    exit
+  else
+    pFlag = 1
+    my.loc = point(300, 90)
+    member("tutorial_pointer_text").text = member("tutorial_pointer_click_pickProgram").text
+  end if
+end
+
+on hide me
+  my.visible = 0
+end

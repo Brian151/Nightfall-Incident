@@ -1,0 +1,37 @@
+global glob
+
+on mouseUp me
+  if sprite(me.spriteNum).blend = 0 then
+    pass()
+    exit
+  end if
+  SndSFX("snd_upload")
+  tempCount = 0
+  i = 1
+  repeat while i <= glob.count(#objs)
+    OBJ = glob.getProp(#objs, i)
+    if OBJ.pType = #item then
+    else
+      if OBJ.pTeam = #player then
+        tempCount = tempCount + 1
+      end if
+    end if
+    i = 1 + i
+  end repeat
+  if tempCount = 0 then
+    exit
+  end if
+  glob.mapBoardObj.pActAgent = 0
+  glob.player_manager.pActAgent = 0
+  sprite(me.spriteNum).blend = 50
+  sprite(me.spriteNum).locZ = 1
+  glob.beginHiLite.hide()
+  glob.ai_manager.clearUploadSpot()
+  glob.tutorialPointer.hide()
+  glob.game_manager.changeState(#BATTLE)
+  glob.game_manager.removeUploadSpots()
+  glob.game_manager.assignAgentId()
+  glob.uploadManager.hide()
+  glob.battleSpyBot.show()
+  glob.turnSwitchPanel.show(#player)
+end

@@ -1,0 +1,21 @@
+global glob
+
+on mouseDown me
+  pResult = glob.battleResultPanel.pResult
+  pTower = glob.battleResultPanel.pTower
+  sendSprite(pTower, #battleResult, pResult)
+  glob.battleResultPanel.hide()
+  temp = sendAllSprites(#reportCnxt, glob.towerID)
+  if pResult = #won and temp.count = 0 then
+    temp = sendAllSprites(#toggle)
+    updateStage()
+    glob.dialogueManager.show()
+  else
+    if glob.towerID = 40 then
+      glob.dialogueManager.show(#lost)
+    else
+      glob.setAt(#scrollMap, #YES)
+    end if
+  end if
+  glob.file_manager.savePref()
+end

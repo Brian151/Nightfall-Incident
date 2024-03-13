@@ -1,0 +1,11 @@
+global glob
+
+on mouseUp me
+  SndSFX("snd_select")
+  if the frameLabel = "kill1" or the frameLabel = "kill2" then
+    SndSFX("snd_attack")
+    temp = sprite(67).loc + point(16, 16)
+    glob.particle.doit(temp, #attack)
+  end if
+  go(the frame + 1)
+end

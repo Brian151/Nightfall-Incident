@@ -1,0 +1,7 @@
+on exitFrame me
+  me.followMap()
+end
+
+on followMap me
+  sprite(me.spriteNum).loc = sprite(me.spriteNum - 1).loc
+end

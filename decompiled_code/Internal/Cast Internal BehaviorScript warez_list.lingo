@@ -1,0 +1,40 @@
+property my, pH, pActLine
+global glob
+
+on beginSprite me
+  my = sprite(me.spriteNum)
+  pActLine = 0
+  pH = sprite(me.spriteNum - 1).height
+end
+
+on mouseWithin me
+  ml = my.pointToLine(the mouseLoc)
+  if ml > 0 then
+    base = sprite(glob.warez.spriteNum).loc + point(-98, -94)
+    myLoc = base + point(0, ml - 1 * pH)
+    sprite(me.spriteNum - 1).loc = myLoc
+    sprite(me.spriteNum - 1).blend = 50
+  end if
+end
+
+on mouseLeave me
+  sprite(me.spriteNum - 1).blend = 0
+end
+
+on mouseDown me
+  SndSFX("snd_info")
+  ml = my.pointToLine(the mouseLoc)
+  glob.warez.agentPick(ml)
+end
+
+on exitFrame me
+  temp = glob.warez.pActAgent
+  if temp > 0 and not temp = pActLine then
+    pActLine = temp
+    member("warez_name_list").fontStyle = [#plain]
+  else
+    if temp = 0 then
+      member("warez_name_list").fontStyle = [#plain]
+    end if
+  end if
+end
